@@ -9,7 +9,7 @@
     "test": "test"
   },
   "dependencies": {},
-  "devDependencies": { },
+  "devDependencies": {},
   "scripts": {
     "test": "node node-runner.js -p=./test/minimal-example.js"
   },
