@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Smoke Minimal Example (no AMD)</title>
+</head>
+<body>
+<div id="smoke"></div>
+<script src="./smoke.js"></script>
+<script>
+	(function(){
+		let urlParams = [];
+		let qString = decodeURIComponent(window.location.search.substring(1));
+		((qString && qString.split("#")[0]) || "").split("&").forEach(arg =>{
+			urlParams.push(arg);
+		});
+		smoke.configure(urlParams).then(function(){
+			smoke.runDefault();
+        });
+	})();
+</script>
+<h1>This document causes bd-smoke to load scripts given in the URL query string and then execute smoke.runDefault() without AMD.</h1>
+<h2>Make sure you specify something to load in the URL query string! It should look something like this:</h2>
+<p>
+    http://localhost:8080/altoviso/bd-smoke/browser-runner.html?p=./test/minimal-example.js
+</p>
+<p>
+    Here is a helper that loads the minimal example test as an example:
+    <a href="./browser-runner.html?p=./test/minimal-example.js">./browser-runner.html?p=./test/minimal-example.js</a>
+</p>
+<h2>Open the console to see the results.</h2>
+</body>
+</html>

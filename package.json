@@ -1,0 +1,32 @@
+{
+  "name": "bd-smoke",
+  "version": "0.2.0",
+  "description": "Simple, powerful javascript test framework for node.js and the browser with NO dependencies.",
+  "homepage": "http://github.com/altoviso/bd-smoke",
+  "bugs": "http://github.com/altoviso/bd-smoke/issues",
+  "main": "smoke.js",
+  "directories": {
+    "test": "test"
+  },
+  "dependencies": {},
+  "devDependencies": { },
+  "scripts": {
+    "test": "node node-runner.js -p=./test/minimal-example.js"
+  },
+  "github": "http://github.com/altoviso/bd-smoke",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/altoviso/bd-smoke.git"
+  },
+  "keywords": [
+    "test harness",
+    "test",
+    "tester",
+    "unit test",
+    "unit testing",
+    "system test",
+    "system testing"
+  ],
+  "author": "Rawld Gill <rgill@altoviso.com> (http://altoviso.com/)",
+  "license": "BSD-3-Clause"
+}

@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Smoke Minimal Example (AMD)</title>
+</head>
+<body>
+<div id="smoke"></div>
+<script src="http://requirejs.org/docs/release/2.3.2/minified/require.js"></script>
+<script>
+	require.config({
+		packages: [{name: 'smoke', main: "smoke", location: '.'}]
+	});
+	require(["smoke"], function(smoke){
+		let urlParams = [];
+		let qString = decodeURIComponent(window.location.search.substring(1));
+		((qString && qString.split("#")[0]) || "").split("&").forEach(arg =>{
+			arg = arg.trim();
+			arg && urlParams.push(arg);
+		});
+		smoke.configure(urlParams).then(function(){
+			smoke.runDefault();
+        });
+	});
+</script>
+<h1>This document causes bd-smoke to load scripts given in the URL query string and then execute smoke.runDefault() using AMD.</h1>
+<h2>Make sure you specify something to load in the URL query string! It should look something like this:</h2>
+<p>
+    http://localhost:8080/altoviso/bd-smoke/browser-runner-AMD.html?p=smoke/test/minimal-example
+</p>
+<p>
+    Here is a helper that loads the minimal example test as an example:
+    <a href="./browser-runner-AMD.html?p=smoke/test/minimal-example">./browser-runner-AMD.html?p=smoke/test/minimal-example</a>
+</p>
+<h2>Open the console to see the results.</h2>
+</body>
+</html>

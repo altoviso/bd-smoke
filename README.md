@@ -2,7 +2,7 @@
 
 ## Simple, powerful javascript test framework for node.js and the browser with NO dependencies.
 
-# Requrements
+# Requirements
 
 1. The fundamental function of bd-smoke is to execute any subset of a hierarchy of code fragments (including an entire hierarchy) and report success and failure in a manner that is easily consumable by both a human user and other software systems. 
 
