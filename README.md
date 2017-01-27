@@ -1,5 +1,9 @@
 # bd-smoke
 
+[![Build status][travis-image]][travis-url]
+[![Dependencies][deps-image]][deps-url]
+[![devDependencies][dev-deps-image]][dev-deps-url]
+
 ## Simple, powerful javascript test framework for node.js and the browser with NO dependencies.
 
 # Requirements
@@ -28,3 +32,9 @@
 
 12. The bd-smoke may be switched to slice the hierarchy and execute the resulting slices in multiple, spawned processes.
 
+[deps-image]:     https://img.shields.io/david/altoviso/bd-smoke.svg
+[deps-url]:       https://david-dm.org/altoviso/bd-smoke
+[dev-deps-image]: https://img.shields.io/david/dev/altoviso/bd-smoke.svg
+[dev-deps-url]:   https://david-dm.org/altoviso/bd-smoke#info=devDependencies
+[travis-image]:   https://img.shields.io/travis/altoviso/bd-smoke.svg
+[travis-url]:     https://travis-ci.org/altoviso/bd-smoke
