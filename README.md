@@ -10,7 +10,7 @@
 
 3. A test is comprised of a hierarchy of code fragments that assert behavior of the code expressed in those fragments.
 
-4. The hierarchy may be loaded (1) explicitly by a <script> element in an HTML document, (2) by an AMD module loader, or (3) by the the node.js module loader.
+4. The hierarchy may be loaded (1) explicitly by a `<script>` element in an HTML document, (2) by an AMD module loader, or (3) by the the node.js module loader.
 
 5. The code fragments may be synchronous or asynchronous.
 
