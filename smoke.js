@@ -502,6 +502,18 @@
 					self.options.logger = new Logger(self.options);
 				}
 
+				if(self.options.include){
+					self.tests.forEach(test =>{
+						test.include = self.options.include
+					});
+				}
+
+				if(self.options.exclude){
+					self.tests.forEach(test =>{
+						test.exclude = self.options.exclude
+					});
+				}
+
 				// order the tests as specified by the test objects or by the load order
 				self.tests.forEach((test, index) =>{
 					if(!test.order){
