@@ -11,7 +11,7 @@
   "dependencies": {},
   "devDependencies": {},
   "scripts": {
-    "test": "node node-runner.js -p=./test/minimal-example.js"
+    "test": "node node-runner.js -p=./test/all.js"
   },
   "github": "http://github.com/altoviso/bd-smoke",
   "repository": {
