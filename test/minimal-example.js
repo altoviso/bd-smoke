@@ -1,6 +1,3 @@
-// to run this test: in the directory that contains node-runner.js (the parent of this directory), execute
-// node node-runner -p=./test/minimal-example.js
-
 (function(factory){
 	if(typeof define != "undefined"){
 		define(["smoke"], factory);
@@ -48,4 +45,3 @@
 	});
 
 });
-
