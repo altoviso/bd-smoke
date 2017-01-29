@@ -150,7 +150,7 @@ Run it in the browser with AMD
 <as-required-for-your-environment>/node_modules/smoke/browser-runner-AMD.html?p="../test/trivial"
 ```
 ## Command-line / URL switches
-bd-smoke is controlled by switches passed to it from the command line, when running in node.js, or form the URL query
+bd-smoke is controlled by switches passed to it from the command line, when running in node.js, or from the URL query
 string, when running in the browser. Each switch has the form
 ```
 --<long-switch-name>=<value>
@@ -160,7 +160,7 @@ or
 -<short-switch-name>=<value>
 ```
 We've already seen the `-p` switch, which is the short name for the `--profile` switch. The profile switch says which
-files to load and execute. It is allowed to have multiple profiles within a single command line.
+files to load and execute. Multiple profiles may be specified within a single command line.
 
 For large tests, a file loaded by the profile switch will itself go on to load several other files. Take a look at `all.js `
 in the test directory for an example.
@@ -195,8 +195,8 @@ smoke.defTest({
 	}]
 });
 ```
-Of course a node can contain any combination of tests and child nodes. When a test is contained in a node that had multiple
-children like this, it is specified by providing a pair of `[`<test-name, string>`,`<test, function>`]`. Here is an example
+Of course a node can contain any combination of tests and child nodes. When a test is contained in a node that has multiple
+children like this, it is specified by providing a pair of `[<test-name, string>,<test, function>]`. Here is an example
 of a tree that has a root node that contains both tests and children nodes.
 ```
 smoke.defTest({
@@ -258,23 +258,23 @@ function traverse(node){
 ## Executing Subsets of Tests
 Notice that each test is addressable by a name as given by the path to the test. This feature can be used to execute
 subsets of tests with the `include` command line parameter. `include` is a `;`-separated list of paths. Each path may
-optionally terminate with a `:` followed by a `,`-separated list of test to execute at the give path end-point. For example:
-`
+optionally terminate with a `:` followed by a `,`-separated list of test to execute at the path end-point. For example:
+```
 --include="path\to\test1"
-`
+```
 Executes the child node with the `id` or test name `"test1"` of the child node with the `id` `"to"` of the root node with the `id` `"path"`.
 Here is an example with several tests:
-`
+```
 --include="path\to\test-foo;another-root\to\test-bar"
-`
+```
 Notice how you can pull any test out of the hierarchy. Of course the address included in include *need not* be a test, but rather it can be
 any node. If it is a node that contains several tests and/or children, then all of those tests and/or children will be executed.
 
 Terminating a path with a colon is just a shorthand; the following two include directives are equivalent:
-`
+```
 --include="path\to\test-foo;path\to\test-bar"
 --include="path\to:test-foo,test-bar"
-`
+```
 
 # Requirements
 
