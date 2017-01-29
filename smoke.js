@@ -448,39 +448,38 @@
 						self.options.exclude = value.reduce(augmentIncludeExclude, self.options.exclude || {});
 						break;
 					default:
-						if(name !== "profile"){
-							self.options[name] = value;
-						}
+						self.options[name] = value;
 				}
 			}
 
 			return (new Promise(function(resolve, reject){
 				// load all the profiles
-				let smokeRequire;
+				let smokeRequire,
+					waitingCount = 0;
 				if(environment === "AMD"){
-					let waitingCount = 0;
 					smokeRequire = function(module){
 						waitingCount++;
 						require([module], function(){
-							if(--waitingCount == 0){
-								resolve();
-							}
+							--waitingCount;
+							loadAllProfiles();
 						});
 					};
 				}else if(environment === "node"){
-					smokeRequire = require;
+					smokeRequire = function(moduleName){
+						require(moduleName);
+						--waitingCount;
+						loadAllProfiles();
+					};
 				}else{
 					// naked browser
-					let insertPoint = document.getElementsByTagName("script")[0].parentNode,
-						waitingCount = 0;
+					let insertPoint = document.getElementsByTagName("script")[0].parentNode;
 					smokeRequire = function(url){
 						waitingCount++;
 						let node = document.createElement("script"),
 							handler = function(e){
 								if(e.type === "load"){
-									if(--waitingCount == 0){
-										resolve();
-									}
+									--waitingCount;
+									loadAllProfiles();
 								}else{
 									reject(e);
 								}
@@ -492,10 +491,38 @@
 						return node;
 					};
 				}
-				commandLineOptions.profile && commandLineOptions.profile.forEach(smokeRequire);
-				if(environment === "node"){
-					resolve();
+
+				var loadedProfiles = {};
+
+				function loadAllProfiles(){
+					// keep loading profiles until all of them have been loaded; loading a profile may cause more
+					// profiles to be added
+
+					// don't re-entry the loading loop until there is no more work to do
+					if(waitingCount){
+						return;
+					}
+
+					// don't re-enter the loading loop while were in the loop
+					waitingCount++;
+					let recheck = false;
+					(self.options.profile || []).slice().forEach(p =>{
+						if(!loadedProfiles[p]){
+							loadedProfiles[p] = true;
+							recheck = true;
+							smokeRequire(p);
+						}
+					});
+					--waitingCount;
+
+					if(recheck){
+						loadAllProfiles();
+					}else if(waitingCount==0){
+						resolve();
+					}
 				}
+
+				loadAllProfiles();
 			})).then(function(){
 				// if a logger was not provided, then provide the trivial console logger
 				if(!self.options.logger){
