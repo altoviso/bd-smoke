@@ -1,4 +1,5 @@
 # bd-smoke
+### The Backdraft test harness by [ALTOVISO](http://www.altoviso.com/).
 
 [![Build status][travis-image]][travis-url]
 [![Dependencies][deps-image]][deps-url]
@@ -8,19 +9,19 @@
 
 # Features
 
-* Executes on node.js and in the browser--*with or without* AMD
-
 * **No dependencies**
+
+* Executes on node.js and in the browser--*with or without* AMD
 
 * Executes an arbitrarily deep and wide hierarchy of code fragments
 
-* Executes synchronous and asynchronous tests
+* Executes synchronous and asynchronous code fragments/tests
 
 * Optional before/before-each/after-each/after scaffolding as the hierarchy is traversed
 
 * High-precision timer for performance testing
 
-* Simple command-line/URL switches that cause a subset of fragments to be executes
+* Simple command-line/URL switches that cause a subset of fragments to be executed
 
 * Simple extendable and replaceable logging machinery
 
@@ -38,7 +39,8 @@ npm install bd-smoke
 
 ## Getting Started on Node
 
-Assuming you have a `test` directory in the root of your project, create the file`trivial-node.js` that looks like this:
+Assuming you have a `test` directory in the root of your project, create the file`trivial-node.js` in that directory
+that looks like this:
 
 ```
 let smoke = require("smoke");
@@ -61,7 +63,8 @@ $ ./node_modules/smoke/node-runner -p="./test/trivial-node"
 ```
 ## Getting Started in the Browser without AMD
 
-Assuming you have a `test` directory in the root of your project, create the file`trivial-nonAMD.js` that looks like this:
+Assuming you have a `test` directory in the root of your project, create the file`trivial-nonAMD.js` in that directory
+that looks like this:
 
 ```
 const assert = smoke.assert;
@@ -83,7 +86,8 @@ Now run the test: in the browser, navigate to...
 ```
 ## Getting Started in the Browser with AMD
 
-Assuming you have a `test` directory in the root of your project, create the file`trivial-amd.js` that looks like this:
+Assuming you have a `test` directory in the root of your project, create the file`trivial-amd.js` in that directory
+that looks like this:
 
 ```
 require(["smoke"], function(smoke){
@@ -145,6 +149,22 @@ Run it in the browser with AMD
 ```
 <as-required-for-your-environment>/node_modules/smoke/browser-runner-AMD.html?p="../test/trivial"
 ```
+## Command-line / URL switches
+bd-smoke is controlled by switches passed to it from the command line, when running in node.js, or form the URL query
+string, when running in the browser. Each switch has the form
+```
+--<long-switch-name>=<value>
+```
+or
+```
+-<short-switch-name>=<value>
+```
+We've already seen the `-p` switch, which is the short name for the `--profile` switch. The profile switch says which
+files to load and execute. It is allowed to have multiple profiles within a single command line.
+
+For large tests, a file loaded by the profile switch will itself go on to load several other files. Take a look at `all.js `
+in the test directory for an example.
+
 ## Test Hierarchies
 A test is a hierarchy (a tree) of nodes. Each node in the tree can contain either a single test of an ordered
 list of tests and other nodes. When a node specifies a single test, is has an `id` property that names the test and a
