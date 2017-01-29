@@ -8,23 +8,28 @@
 
 # Requirements
 
-1. The fundamental function of bd-smoke is to execute any subset of a hierarchy of code fragments (including an entire hierarchy) and report success and failure in a manner that is easily consumable by both a human user and other software systems. 
+1. The fundamental function of bd-smoke is to execute any subset of a hierarchy of code 
+fragments (including an entire hierarchy) and report success and failure in a manner that
+is easily consumable by both a human user and a software system. 
 
 2. bd-smoke executes in either the browser or node.js.
 
-3. A test is comprised of a hierarchy of code fragments that assert behavior of the code expressed in those fragments.
+3. A test is comprised of a hierarchy of code fragments that assert behavior of the code
+expressed in those fragments.
 
-4. The hierarchy may be loaded by (1) a `<script>` element in an HTML document, (2) an AMD module loader, or (3) the the node.js module loader.
+4. The hierarchy may be loaded by (1) a `<script>` element in an HTML document, (2) an AMD
+module loader, or (3) the the node.js module loader.
 
-5. The code fragments may be synchronous or asynchronous.
+5. The code fragments may execute synchronously or asynchronously.
 
-6. Before, before-each, after-each, and after scaffolds may be provided for each code fragment in the hierarchy.
+6. Before, before-each, after-each, and after scaffolds may be provided for each code fragment
+in the hierarchy.
 
 7. The code fragments in the hierarchy are named.
 
 8. The hierarchy may be spread across multiple files.
 
-9. bd-smoke may be switched to continue or halt exercising asserts upon an assertion failure.
+9. bd-smoke may be switched to continue or halt upon an assertion failure.
 
 10. bd-smoke assumes an ES6 environment.
 
