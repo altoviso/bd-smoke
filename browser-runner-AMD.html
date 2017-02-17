@@ -1,37 +1,191 @@
 <!DOCTYPE html>
+<!--
+    This document causes bd-smoke to load scripts given in the URL query string with the "profile" or "p" option and
+    then execute all tests defined in those scripts. If the profile argument does <b>not</b> have a file type, then it
+    is assumed to be an AMD module and is loaded with the AMD loader; otherwise, it is explicitly injected into the
+    document. Make sure you specify something to load in the URL query string! (Try ?p=./test/minimal-example-amd.js to
+    see a quick example.)
+-->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>Smoke Browser Runner (AMD)</title>
+    <style type="text/css">
+        * {
+            font-family: sans-serif;
+        }
+
+        #smoke {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 1em;
+            right: 1em;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #progress {
+            flex-grow: 1;
+            flex-shrink: 1;
+            min-height: 5em;
+            overflow: auto;
+        }
+
+        div.loading, div.progress, div.load-fail {
+            display:none;
+        }
+        .loading div.loading {
+            display:block;
+        }
+        .progress div.progress {
+            display:block;
+        }
+        .load-fail div.load-fail {
+            display:block;
+        }
+
+        .started::before {
+            display: inline-block;
+            width: 4em;
+            content: "STARTED";
+        }
+
+        .pass::before {
+            display: inline-block;
+            width: 4em;
+            color: green;
+            content: "PASS";
+        }
+
+        .fail::before {
+            display: inline-block;
+            width: 4em;
+            color: red;
+            content: "FAIL";
+        }
+
+        #results p {
+            margin: .3em .5em;
+        }
+
+        #results p span {
+            display: inline-block;
+            width: 6em;
+        }
+    </style>
 </head>
-<body>
-<div id="smoke"></div>
-<script src="http://requirejs.org/docs/release/2.3.2/minified/require.js"></script>
+<body class="loading">
+<div id="smoke">
+    <h1>smoke - the backdraft test harness by <a href="http://www.altoviso.com">ALTOVISO</a></h1>
+    <p>AMD browser runner; open the console to see further results.</p>
+    <div class="loading">
+        <p>Loading...</p>
+    </div>
+    <div class="progress">
+        <h2>Progress</h2>
+        <div id="progress"></div>
+        <div>
+            <h2>Results:</h2>
+            <div id="results"></div>
+        </div>
+    </div>
+    <div class="load-fail">
+        <p>Failed to load the AMD loader; check that either the bd-load package is installed in node_modules or the argument specified for the
+        "loader" query string parameter.</p>
+    </div>
+</div>
+
 <script>
-	require.config({
-		packages: [{name: 'smoke', main: "smoke", location: '.'}]
-	});
-	require(["smoke"], function(smoke){
-		let urlParams = [];
+	(function(){
+		function start(){
+			document.body.className = "progress";
+
+			require.config({
+				packages: [{name: 'smoke', main: "smoke", location: '.'}]
+			});
+			require(["smoke"], function(smoke){
+				function getTestName(context, test){
+					return context.map(node =>{
+							return node.id;
+						}).join("/") + (test[0] ? "/" + test[0] : "");
+				}
+
+				let currentNode,
+					progressNode = document.getElementById("progress");
+
+				function createNode(context, node){
+					currentNode = document.createElement("div");
+					currentNode.innerHTML = getTestName(context, node);
+					currentNode.className = "started";
+					progressNode.appendChild(currentNode);
+				}
+
+				const Logger = class extends smoke.Logger {
+					constructor(options){
+						super(options);
+					}
+
+					startTest(context, node){
+						createNode(context, node);
+						super.startTest(context, node);
+					}
+
+					passTest(context, node){
+						currentNode.className = "pass";
+						super.passTest(context, node);
+					}
+
+					failTest(context, node, error){
+						currentNode.className = "fail";
+						super.failTest(context, node, error);
+					}
+
+					logNote(note){
+						let node = document.createElement("p");
+						node.innerHTML = note;
+						progressNode.appendChild(node);
+						super.logNote(note);
+					}
+				};
+				smoke.options.logger = new Logger(smoke.options);
+
+				smoke.configureBrowser().then(function(){
+					smoke.runDefault().then(function(logger){
+						document.getElementById("results").innerHTML =
+							"<p><span>total:</span>" + logger.totalCount + "</p>" +
+							"<p><span>pass:</span>" + logger.passCount + "</p>" +
+							"<p><span>fail:</span>" + logger.failCount + "</p>" +
+							"<p><span>scaffold fail:</span>" + logger.scaffoldFailCount + "</p>";
+					});
+				});
+			});
+		}
+
+		// assume the bd-load package is installed; allow the user to override in the URL
+		let amdLoaderUrl = "../bd-load/load.js";
+		//let amdLoaderUrl = "http://requirejs.org/docs/release/2.3.2/minified/require.js";
 		let qString = decodeURIComponent(window.location.search.substring(1));
-		((qString && qString.split("#")[0]) || "").split("&").forEach(arg =>{
-			arg = arg.trim();
-			arg && urlParams.push(arg);
+		((qString && qString.split("#")[0]) || "").split("&").some(arg =>{
+			let split = arg.split("=").map(s =>{
+				return s.trim();
+			});
+			if(split[0] === "loader"){
+				amdLoaderUrl = split[1];
+				return true;
+			}
 		});
-		smoke.configure(urlParams).then(function(){
-			smoke.runDefault();
-        });
-	});
+
+		// inject the loader
+		node = document.createElement("script");
+		node.src = amdLoaderUrl;
+		node.addEventListener("load", start);
+		node.addEventListener("error", function(){
+			document.body.className = "load-fail";
+		});
+		document.getElementsByTagName("script")[0].parentNode.appendChild(node);
+	})();
 </script>
-<h1>This document causes bd-smoke to load scripts given in the URL query string and then execute smoke.runDefault() using AMD.</h1>
-<h2>Make sure you specify something to load in the URL query string! Here is an example that loads the test ./smoke/test/minimal-example:</h2>
-<p>
-    http://localhost:8080/altoviso/bd-smoke/browser-runner-AMD.html?p=smoke/test/minimal-example
-</p>
-<p>
-    Here is a helper that loads the minimal example test as an example:
-    <a href="./browser-runner-AMD.html?p=smoke/test/minimal-example">./browser-runner-AMD.html?p=smoke/test/minimal-example</a>
-</p>
-<h2>Open the console to see the results.</h2>
+
 </body>
 </html>
