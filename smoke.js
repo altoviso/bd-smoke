@@ -2,15 +2,17 @@
 	if(typeof define != "undefined" && define.amd){
 		define([], factory.bind(null, "AMD"));
 	}else if(typeof module != "undefined"){
-		module.exports = factory("node");
+		module.exports = factory();
 	}else{
-		smoke = factory("naked-browser");
+		smoke = factory();
 	}
 })(function(environment){
 	"use strict";
 
-
 	const
+		isBrowser = typeof window !== "undefined",
+		isNode = !isBrowser,
+		isAmd = environment === "AMD",
 		STARTUP = Symbol("startup"),
 		SPECIFICATION = Symbol("specification"),
 		BEFORE = Symbol('before'),
@@ -38,7 +40,7 @@
 			[UNEXPECTED]: "unexpected"
 		};
 
-	const Timer = (typeof process !== "undefined" && typeof process.hrtime === "function") ?
+	const Timer = isNode ?
 		class {
 			constructor(){
 				this.startMark = process.hrtime();
