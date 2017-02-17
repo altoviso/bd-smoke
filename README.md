@@ -83,9 +83,10 @@ smoke.defTest({
 Now run the test: in the browser, navigate to...
 ```
 <as required for your environment><your project directory>/node_modules/bd-smoke/browser-runner.html?p=../../test/trivial-nonAMD.js
+```
 
 *warning* the -p argument is relative to <as required for your environment><your project directory>/node_modules/bd-smoke/browser-runner.html
-```
+
 ## Getting Started in the Browser with AMD
 
 Assuming you have a `test` directory in the root of your project, create the file`trivial-AMD.js` in that directory
@@ -109,8 +110,9 @@ define(["smoke"], function(smoke){
 Now run the test: in the browser, navigate to...
 ```
 <as required for your environment><your project directory>/node_modules/bd-smoke/browser-runner-amd.html?p=test/trivial-AMD&package=test:../../test
-*warning* the package path argument is relative to <as required for your environment><your project directory>/node_modules/bd-smoke/browser-runner.html
 ```
+*warning* the package path argument is relative to <as required for your environment><your project directory>/node_modules/bd-smoke/browser-runner.html
+
 ## Getting Started with UMD
 
 The three examples above can be combined into one example that will work in all three environments by defining the test
