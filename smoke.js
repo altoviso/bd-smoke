@@ -109,34 +109,25 @@
 			return this._unexpected;
 		}
 
+		getName(context, node){
+			return context.map(node =>{
+					return node.id;
+				}).join(this.options.nameSeparator) + (node && node[0] ? this.options.nameSeparator + node[0] : "");
+		}
+
 		startTest(context, node){
 			this._totalCount++;
 		}
 
 		passTest(context, node){
 			this._passCount++;
+			console.log("PASS[test] " + this.getName(context, node));
 		}
 
 		failTest(context, node, error){
 			this._failCount++;
-			let name = context.map(node =>{
-					return node.id;
-				}).join(this.options.nameSeparator) + (node[0] ? this.options.nameSeparator + node[0] : "");
-			console.error("FAIL[test] " + name);
-			console.log(error.stack);
-			console.log(error)
-		}
-
-		failScaffold(context, node, phaseText, error){
-			this._scaffoldFailCount++;
-			let name = [];
-			for(let i = 0, end = context.length; i < end; i++){
-				name.push(context[i].id);
-				if(context[i] === node) break;
-			}
-			console.error("FAIL[" + phaseText + "] " + name.join(this.options.nameSeparator));
-			console.log(error.stack);
-			console.log(error);
+			console.log("FAIL[test] " + this.getName(context, node));
+			if(!isNode) console.log(error);
 		}
 
 		failScaffold(context, node, phaseText, error){
@@ -158,6 +149,10 @@
 					}).join(this.options.nameSeparator) + (test && test[0] ? this.options.nameSeparator + test[0] : "");
 				console.log("EXCLUDED " + name);
 			}
+		}
+
+		logNote(note){
+			console.log(note);
 		}
 	};
 
