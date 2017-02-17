@@ -552,6 +552,14 @@
 
 		},
 
+		configureBrowser: function(urlParams){
+			urlParams = urlParams || [];
+			let qString = decodeURIComponent(window.location.search.substring(1));
+			((qString && qString.split("#")[0]) || "").split("&").forEach(arg => urlParams.push(arg));
+			urlParams.push("cwd=" + (location.origin + location.pathname).match(/(.+)\/[^/]+$/)[1]);
+			return this.configure(urlParams);
+		},
+
 		assert: function(value){
 			// trivial assert; any function that throws upon a detected error will work
 			if(!value){
