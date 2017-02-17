@@ -323,7 +323,7 @@
 						try{
 							logger.startTest(context, node);
 							let timer = new Timer(),
-								result = node[1]();
+								result = node[1].call(context[context.length - 1], logger);
 							if(result instanceof Promise){
 								result.then(
 									function(){
@@ -352,7 +352,7 @@
 					}else{
 						try{
 							const methodName = phaseToMethodName[phase];
-							let result = node[methodName]();
+							let result = node[methodName].call(node, logger);
 							if(result instanceof Promise){
 								result.then(
 									function(){
