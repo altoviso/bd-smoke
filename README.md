@@ -23,7 +23,7 @@
 
 * Simple command-line/URL switches that cause a subset of fragments to be executed
 
-* Simple extendable and replaceable logging machinery
+* Simple, extendable, and replaceable logging machinery
 
 * *Un*opinionated assert requirements: anything that throws an exception can be used to show failure
 
@@ -33,17 +33,15 @@
 
 ## Installation
 
-```
-npm install bd-smoke
-```
+clone this repo as required. The examples below assume it was put in the `node_modules` subdirectory of your project directory.
 
 ## Getting Started on Node
 
-Assuming you have a `test` directory in the root of your project, create the file`trivial-node.js` in that directory
+Assuming you have a `test` subdirectory in the root of your project, create the file`trivial-node.js` in that directory
 that looks like this:
 
 ```
-let smoke = require("smoke");
+let smoke = require("bd-smoke");
 const assert = smoke.assert;
 
 smoke.defTest({
@@ -59,8 +57,10 @@ smoke.defTest({
 
 Now run the test, from your project root directory, execute
 ```
-$ ./node_modules/smoke/node-runner -p="./test/trivial-node"
+$ node ./node_modules/bd-smoke/node-runner.js -p=../../test/trivial-node.js
 ```
+*warning* the -p argument is relative to ./node_modules/bd-smoke/node-runner.js
+
 ## Getting Started in the Browser without AMD
 
 Assuming you have a `test` directory in the root of your project, create the file`trivial-nonAMD.js` in that directory
@@ -82,15 +82,17 @@ smoke.defTest({
 
 Now run the test: in the browser, navigate to...
 ```
-<as-required-for-your-environment>/node_modules/smoke/browser-runner.html?p="../test/trivial-nonAMD"
+<as required for your environment><your project directory>/node_modules/bd-smoke/browser-runner.html?p=../../test/trivial-nonAMD.js
+
+*warning* the -p argument is relative to <as required for your environment><your project directory>/node_modules/bd-smoke/browser-runner.html
 ```
 ## Getting Started in the Browser with AMD
 
-Assuming you have a `test` directory in the root of your project, create the file`trivial-amd.js` in that directory
+Assuming you have a `test` directory in the root of your project, create the file`trivial-AMD.js` in that directory
 that looks like this:
 
 ```
-require(["smoke"], function(smoke){
+define(["smoke"], function(smoke){
 	const assert = smoke.assert;
 
 	smoke.defTest({
@@ -106,7 +108,8 @@ require(["smoke"], function(smoke){
 
 Now run the test: in the browser, navigate to...
 ```
-<as-required-for-your-environment>/node_modules/smoke/browser-runner-AMD.html?p="../test/trivial-amd"
+<as required for your environment><your project directory>/node_modules/bd-smoke/browser-runner-amd.html?p=test/trivial-AMD&package=test:../../test
+*warning* the package path argument is relative to <as required for your environment><your project directory>/node_modules/bd-smoke/browser-runner.html
 ```
 ## Getting Started with UMD
 
@@ -118,7 +121,7 @@ in the file `trivial.js` using UMD like this:
 	if(typeof define != "undefined"){
 		define(["smoke"], factory);
 	}else if(typeof module != "undefined"){
-		factory(require("../smoke"));
+		factory(require("bd-smoke"));
 	}else{
 		factory(smoke);
 	}
@@ -139,15 +142,17 @@ in the file `trivial.js` using UMD like this:
 ```
 Run it on Node
 ```
-$ ./node_modules/smoke/node-runner -p="./test/trivial"
+$ node ./node_modules/bd-smoke/node-runner.js -p=../../test/trivial.js
 ```
+*warning* the -p argument is relative to ./node_modules/bd-smoke/node-runner.js
+
 Run it in the browser without AMD
 ```
-<as-required-for-your-environment>/node_modules/smoke/browser-runner-AMD.html?p="../test/trivial"
+<as-required-for-your-environment>/node_modules/smoke/browser-runner.html?p=../../test/trivial.js"
 ```
 Run it in the browser with AMD
 ```
-<as-required-for-your-environment>/node_modules/smoke/browser-runner-AMD.html?p="../test/trivial"
+<as-required-for-your-environment>/node_modules/smoke/browser-runner-amd.html?p=test/trivial&package=test:../../test
 ```
 ## Command-line / URL switches
 bd-smoke is controlled by switches passed to it from the command line, when running in node.js, or from the URL query
@@ -164,6 +169,12 @@ files to load and execute. Multiple profiles may be specified within a single co
 
 For large tests, a file loaded by the profile switch will itself go on to load several other files. Take a look at `all.js `
 in the test directory for an example.
+
+If an AMD loader is present, profile arguments without a file type are assumed to be AMD modules. If the profile argument
+has a file type, then it is loaded outside the context of the AMD loader.
+
+The `--package=<package name>:<package location>:<package main>` causes the implied package config to be sent to the AMD
+loader *before* any AMD modules are attempted to be loaded. `:<package main>` is optional.
 
 ## Test Hierarchies
 A test is a hierarchy (a tree) of nodes. Each node in the tree can contain either a single test of an ordered

@@ -454,17 +454,13 @@
 					case "exclude":
 						self.options.exclude = value.reduce(augmentIncludeExclude, self.options.exclude || {});
 						break;
-					case "title":
-						if(isBrowser){
-
-						}
 					case "package":
 						value.forEach(value =>{
-							let split = value.split(";").map(item =>{
+							let split = value.split(":").map(item =>{
 								return item.trim();
 							});
 							require.config({packages: [{name: split[0], location: split[1], main: split[2]}]});
-						})
+						});
 						break;
 					default:
 						self.options[name] = value;
