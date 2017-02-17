@@ -583,6 +583,27 @@
 			}
 		},
 
+		getTest: function(name){
+			let segments = name.split("/"),
+				tests = this.tests;
+			while(segments.length){
+				let target = segments.shift();
+				if(Array.isArray(tests)){
+					if(!tests.some(test =>{
+							if(test.id == target){
+								return (tests = test);
+							}
+						})){
+						return false;
+					}else if(!segments.length){
+						return tests;
+					}
+				}else{
+					return segments.length == 0 && target == tests.id && tests;
+				}
+			}
+		},
+
 		run: function(testInstruction, logger, options){
 			// run the test given by testInstruction, log the output to logger, and control parts of the process by options
 
