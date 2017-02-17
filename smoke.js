@@ -1,5 +1,5 @@
 (function(factory){
-	if(typeof define != "undefined"){
+	if(typeof define != "undefined" && define.amd){
 		define([], factory.bind(null, "AMD"));
 	}else if(typeof module != "undefined"){
 		module.exports = factory("node");
