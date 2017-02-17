@@ -560,6 +560,15 @@
 			return this.configure(urlParams);
 		},
 
+		contAsync: function(resolve, reject, proc){
+			try{
+				proc();
+				resolve();
+			}catch(e){
+				reject(e);
+			}
+		},
+
 		assert: function(value){
 			// trivial assert; any function that throws upon a detected error will work
 			if(!value){
