@@ -97,6 +97,7 @@
 </div>
 
 <script>
+    "use strict";
 	(function(){
 		function start(){
 			document.body.className = "progress";
@@ -162,9 +163,9 @@
 			});
 		}
 
-		// assume the bd-load package is installed; allow the user to override in the URL
-		let amdLoaderUrl = "../bd-load/load.js";
-		//let amdLoaderUrl = "http://requirejs.org/docs/release/2.3.2/minified/require.js";
+		let amdLoaderUrl = "http://requirejs.org/docs/release/2.3.2/minified/require.js";
+		// or, if bd-load package is installed...
+		//let amdLoaderUrl = "../bd-load/load.js";
 		let qString = decodeURIComponent(window.location.search.substring(1));
 		((qString && qString.split("#")[0]) || "").split("&").some(arg =>{
 			let split = arg.split("=").map(s =>{
@@ -177,7 +178,7 @@
 		});
 
 		// inject the loader
-		node = document.createElement("script");
+		let node = document.createElement("script");
 		node.src = amdLoaderUrl;
 		node.addEventListener("load", start);
 		node.addEventListener("error", function(){
