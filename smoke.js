@@ -380,7 +380,16 @@
 
 			doWork();
 		});
+	}
 
+	let configLockCount = 0;
+
+	function lockConfig(){
+		configLockCount++;
+	}
+
+	function releaseConfig(){
+		configLockCount--;
 	}
 
 	return {
@@ -435,6 +444,7 @@
 			});
 
 			// process everything except the profiles into self.options; self allows modules loaded via profiles to use the options
+			let packageConfig = [];
 			for(let name in commandLineOptions){
 				let value = commandLineOptions[name];
 				switch(name){
@@ -444,6 +454,18 @@
 					case "exclude":
 						self.options.exclude = value.reduce(augmentIncludeExclude, self.options.exclude || {});
 						break;
+					case "title":
+						if(isBrowser){
+
+						}
+					case "package":
+						value.forEach(value =>{
+							let split = value.split(";").map(item =>{
+								return item.trim();
+							});
+							require.config({packages: [{name: split[0], location: split[1], main: split[2]}]});
+						})
+						break;
 					default:
 						self.options[name] = value;
 				}
@@ -451,31 +473,23 @@
 
 			return (new Promise(function(resolve, reject){
 				// load all the profiles
-				let smokeRequire,
-					waitingCount = 0;
-				if(environment === "AMD"){
-					smokeRequire = function(module){
-						waitingCount++;
-						require([module], function(){
-							--waitingCount;
-							loadAllProfiles();
-						});
-					};
-				}else if(environment === "node"){
+				let smokeRequire;
+				if(isNode){
 					smokeRequire = function(moduleName){
-						require(moduleName);
-						--waitingCount;
+						lockConfig();
+						(isAmd ? require.nodeRequire : require)(moduleName);
+						releaseConfig();
 						loadAllProfiles();
 					};
 				}else{
-					// naked browser
+					// browser
 					let insertPoint = document.getElementsByTagName("script")[0].parentNode;
 					smokeRequire = function(url){
-						waitingCount++;
+						lockConfig();
 						let node = document.createElement("script"),
 							handler = function(e){
 								if(e.type === "load"){
-									--waitingCount;
+									releaseConfig();
 									loadAllProfiles();
 								}else{
 									reject(e);
@@ -483,11 +497,18 @@
 							};
 						node.addEventListener("load", handler, false);
 						node.addEventListener("error", handler, false);
-						node.src = url;
+						node.src = url + (/\.js$/.test(url) ? "" : ".js");
 						insertPoint.appendChild(node);
 						return node;
 					};
 				}
+				let loadAMDModule = isAmd ? function(module){
+						lockConfig();
+						require([module], function(){
+							releaseConfig();
+							loadAllProfiles();
+						});
+					} : 0;
 
 				var loadedProfiles = {};
 
@@ -496,25 +517,30 @@
 					// profiles to be added
 
 					// don't re-entry the loading loop until there is no more work to do
-					if(waitingCount){
+					if(configLockCount){
 						return;
 					}
 
 					// don't re-enter the loading loop while were in the loop
-					waitingCount++;
+					lockConfig();
 					let recheck = false;
 					(self.options.profile || []).slice().forEach(p =>{
 						if(!loadedProfiles[p]){
 							loadedProfiles[p] = true;
 							recheck = true;
-							smokeRequire(p);
+							if(isAmd && !/\.[^./]*$/.test(p)){
+								// if an AMD loader is present and p does not have a file type, then assume it's an AMD module
+								loadAMDModule(p);
+							}else{
+								smokeRequire(p);
+							}
 						}
 					});
-					--waitingCount;
+					releaseConfig();
 
 					if(recheck){
 						loadAllProfiles();
-					}else if(waitingCount==0){
+					}else if(configLockCount == 0){
 						resolve();
 					}
 				}
@@ -547,9 +573,8 @@
 				self.tests.sort(function(lhs, rhs){
 					return lhs.order - rhs.order;
 				});
+				return self;
 			});
-
-
 		},
 
 		configureBrowser: function(urlParams){
@@ -665,14 +690,15 @@
 		},
 
 		runDefault: function(){
-			this.run("*", this.options.logger).then(function(logger){
+			return this.run("*", this.options.logger).then(function(logger){
 				console.log("        total:" + logger.totalCount);
 				console.log("         pass:" + logger.passCount);
 				console.log("         fail:" + logger.failCount);
-				console.log("scaffold fail:" + logger.failCount);
+				console.log("scaffold fail:" + logger.scaffoldFailCount);
 				if(typeof process !== "undefined"){
 					process.exit(logger.failCount ? 1 : 0);
 				}
+				return logger;
 			});
 		},
 
