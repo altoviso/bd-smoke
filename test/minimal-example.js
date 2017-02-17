@@ -8,37 +8,33 @@
 	}
 })(function(smoke){
 	const assert = smoke.assert;
-
 	smoke.defTest({
 		id: "minimal-example",
 		tests: [
 			["example-pass", function(){
 				assert(true);
 			}],
-			["example-fail", function(){
-				try{
-					assert(false);
-				}catch(e){
-					assert(true);
-				}
+			["example-fail", function(logger){
+				logger.logNote("example-fail: intentional fail to test fail circuitry");
+				assert(false);
 			}],
 			["example-async-pass", function(){
 				return new Promise(function(resolve, reject){
 					setTimeout(function(){
-						resolve(true);
-					}, 100);
+						smoke.contAsync(resolve, reject, function(){
+							assert(true);
+						});
+					}, 30);
 				})
 			}],
-			["example-async-fail", function(){
-				let testPromise = new Promise(function(resolve, reject){
+			["example-async-fail", function(logger){
+				logger.logNote("example-async-fail: intentional fail to test fail circuitry");
+				return new Promise(function(resolve, reject){
 					setTimeout(function(){
-						reject("fail");
-					}, 100);
-				});
-				return testPromise.then(result =>{
-					assert(false);
-				}).catch(error =>{
-					assert(error + "" == "fail");
+						smoke.contAsync(resolve, reject, function(){
+							assert(false);
+						});
+					}, 30);
 				});
 			}]
 		]
