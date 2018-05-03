@@ -33,7 +33,24 @@
 
 ## Installation
 
-clone this repo as required. The examples below assume it was put in the `node_modules` subdirectory of your project directory.
+With `npm`:
+
+```
+npm install -D bd-smoke
+```
+
+With `yarn`:
+
+```
+yarn add bd-smoke
+```
+
+With `bower`:
+
+```
+bower install --save bd-smoke
+```
+
 
 ## Getting Started on Node
 
