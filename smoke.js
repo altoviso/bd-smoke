@@ -81,12 +81,21 @@
 
 	const Logger = class {
 		constructor(options){
-			this.options = options;
+			this.options = {nameSeparator: "/", console: true};
+			this.reset(options);
+		}
+
+		reset(options){
+			this.options = Object.assign({}, this.options, options);
+			this._console = !!this.options.console;
+			this._idSeed = 0;
 			this._unexpected = false;
 			this._totalCount = 0;
 			this._passCount = 0;
 			this._failCount = 0;
 			this._scaffoldFailCount = 0;
+			this._results = [];
+			this._logs = {};
 		}
 
 		get totalCount(){
@@ -109,50 +118,85 @@
 			return this._unexpected;
 		}
 
+		get results(){
+			return this._results
+		}
+
+		get logs(){
+			return this._logs
+		}
+
+		getLog(id){
+			return this._logs[id];
+		}
+
+
 		getName(context, node){
-			return context.map(node =>{
-					return node.id;
-				}).join(this.options.nameSeparator) + (node && node[0] ? this.options.nameSeparator + node[0] : "");
+			return context.map(node => node.id).join(this.options.nameSeparator) +
+				((node && node[0]) ? this.options.nameSeparator + node[0] : "");
 		}
 
-		startTest(context, node){
-			this._totalCount++;
+		getNameById(loggerId){
+			return this._results[loggerId][0];
 		}
 
-		passTest(context, node){
-			this._passCount++;
-			console.log("PASS[test] " + this.getName(context, node));
-		}
-
-		failTest(context, node, error){
-			this._failCount++;
-			console.log("FAIL[test] " + this.getName(context, node));
-			if(!isNode) console.log(error);
-		}
-
-		failScaffold(context, node, phaseText, error){
-			this._scaffoldFailCount++;
+		getScaffoldName(context, node){
 			let name = [];
 			for(let i = 0, end = context.length; i < end; i++){
 				name.push(context[i].id);
 				if(context[i] === node) break;
 			}
-			console.error("FAIL[" + phaseText + "] " + name.join(this.options.nameSeparator));
-			console.log(error.stack);
-			console.log(error);
+			return name.join(this.options.nameSeparator);
+		}
+
+		startTest(context, node){
+			this._totalCount++;
+			let id = ++(this._idSeed);
+			this._results[id] = [this.getName(context, node), (new Date()).getTime(), new Timer()];
+			return id;
+		}
+
+		passTest(id, context, node){
+			this._passCount++;
+			let result = this._results[id];
+			result[2] = result[2].time;
+			this._console && console.log("PASS[test] " + result[0]);
+		}
+
+		failTest(id, context, node, error){
+			this._failCount++;
+			let result = this._results[id];
+			result[2] = false;
+			result[3] = error.stack + "";
+			this._console && console.error("FAIL[test] " + result[0]);
+			this._console && console.log(error);
+		}
+
+		failScaffold(context, node, phaseText, error){
+			this._scaffoldFailCount++;
+			this.log("failScaffold", [this.getScaffoldName(context, node), e])
+			if(this._console){
+				console.error("FAIL[" + phaseText + "] " + this.getScaffoldName(context, node))
+				console.log(error.stack);
+			}
+
+		}
+
+		log(id, entry){
+			(this._logs[id] || (this._logs[id] = [])).push(entry);
 		}
 
 		logExcluded(context, test){
 			if(this.options.logExcludes){
-				let name = context.map(node =>{
-						return node.id;
-					}).join(this.options.nameSeparator) + (test && test[0] ? this.options.nameSeparator + test[0] : "");
-				console.log("EXCLUDED " + name);
+				let name = this.getName(context, node);
+				this.log("excluded", name);
+				this._console && console.log("EXCLUDED " + name);
 			}
 		}
 
 		logNote(note){
-			console.log(note);
+			this.log("note", note);
+			this._console && console.log(note);
 		}
 	};
 
