@@ -509,26 +509,34 @@
 			[],
 
 		configure: function(args){
-			// args is an array or strings...usually either the command line args (node) or a lightly processed the query string (browser)
+			// args is an array or strings...usually either the command line args (node) or a lightly processed query string (browser)
 
 			let self = this;
 
-			// transform options into key->[values] for options of the form "key=value" and key->true for options of the form "key"
+			// transform options into key-> value | [values] for options of the form "key=value" and key->true for options of the form "key"
 			let commandLineOptions = {};
 			args.forEach(option =>{
+				option = option.trim();
 				if(/.+=.+/.test(option)){
 					let split = option.split("="),
 						name = normalizeOptionName(split[0]),
-						value = split[1];
-					if(commandLineOptions[name]){
-						commandLineOptions[name].push(value)
+						value = split[1].trim();
+					value = (/(^".+"$)|(^'.+'$)/.test(value) ? value.match(/^['"](.+)['"]$/)[1] : value).trim();
+					if(name in commandLineOptions){
+						if(!Array.isArray(commandLineOptions[name])){
+							commandLineOptions[name] = [commandLineOptions[name], value];
+						}else{
+							commandLineOptions[name].push(value)
+						}
 					}else{
-						commandLineOptions[name] = [value];
+						commandLineOptions[name] = value;
 					}
 				}else if(option){
 					commandLineOptions[normalizeOptionName(option)] = true;
 				}// else ignore an empty string
 			});
+
+			let toArray = (src) => Array.isArray(src) ? src : [src];
 
 			// process everything except the profiles into self.options; self allows modules loaded via profiles to use the options
 			let packageConfig = [];
@@ -536,18 +544,21 @@
 				let value = commandLineOptions[name];
 				switch(name){
 					case "include":
-						self.options.include = value.reduce(augmentIncludeExclude, self.options.include || {});
+						self.options.include = toArray(value).reduce(augmentIncludeExclude, self.options.include || {});
 						break;
 					case "exclude":
-						self.options.exclude = value.reduce(augmentIncludeExclude, self.options.exclude || {});
+						self.options.exclude = toArray(value).reduce(augmentIncludeExclude, self.options.exclude || {});
 						break;
 					case "package":
-						value.forEach(value =>{
+						toArray(value).forEach(value =>{
 							let split = value.split(":").map(item =>{
 								return item.trim();
 							});
 							require.config({packages: [{name: split[0], location: split[1], main: split[2]}]});
 						});
+						break;
+					case "profile":
+						self.options.profile = toArray(value);
 						break;
 					default:
 						self.options[name] = value;
