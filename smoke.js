@@ -270,7 +270,7 @@
 
 	function normalizeOptionName(name){
 		// strip the leading dashes...
-		name = (name.trim().match(/-*(.+)/)[1]).trim();
+		name = (name.trim().match(/^-*(.+)/)[1]).trim();
 
 		switch(name){
 			case "p":
@@ -283,7 +283,7 @@
 			case "exclude":
 				return "exclude";
 			default:
-				return name.match(/-*(.+)/)[1];
+				return name;
 		}
 	}
 
