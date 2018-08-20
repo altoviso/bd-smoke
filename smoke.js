@@ -402,34 +402,34 @@
 					}
 					const [phase, context, node] = work.value;
 					if(phase === TEST){
+						let loggerId = logger.startTest(context, node);
 						try{
-							logger.startTest(context, node);
 							let timer = new Timer(),
-								result = node[1].call(context[context.length - 1], logger);
+								result = node[1].call(context, logger, loggerId);
 							if(result instanceof Promise){
 								result.then(
 									function(){
-										logger.passTest(context, node);
+										logger.passTest(loggerId, context, node);
 										node[2] = timer.time;
 										doWork();
 									}
 								).catch(
 									function(e){
 										node[2] = e;
-										logger.failTest(context, node, e);
+										logger.failTest(loggerId, context, node, e);
 										doWork();
 									}
 								);
 								return;
 							}else{
 								// synchronous result, continue to consume the work stream
-								logger.passTest(context, node);
+								logger.passTest(loggerId, context, node);
 								node[2] = timer.time;
 							}
 						}catch(e){
 							// synchronous error, continue to consume the work stream, which will terminate immediately
 							node[2] = e;
-							logger.failTest(context, node, e);
+							logger.failTest(loggerId, context, node, e);
 						}
 					}else{
 						try{
