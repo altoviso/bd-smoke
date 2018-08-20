@@ -597,12 +597,12 @@
 					};
 				}
 				let loadAMDModule = isAmd ? function(module){
-						lockConfig();
-						require([module], function(){
-							releaseConfig();
-							loadAllProfiles();
-						});
-					} : 0;
+					lockConfig();
+					require([module], function(){
+						releaseConfig();
+						loadAllProfiles();
+					});
+				} : 0;
 
 				var loadedProfiles = {};
 
@@ -709,10 +709,10 @@
 				let target = segments.shift();
 				if(Array.isArray(tests)){
 					if(!tests.some(test =>{
-							if(test.id == target){
-								return (tests = test);
-							}
-						})){
+						if(test.id == target){
+							return (tests = test);
+						}
+					})){
 						return false;
 					}else if(!segments.length){
 						return tests;
@@ -727,6 +727,7 @@
 			// run the test given by testInstruction, log the output to logger, and control parts of the process by options
 
 			options = options || this.options;
+			logger = logger || this.options.logger;
 
 			let testList;
 			if(testInstruction == "*"){
@@ -738,7 +739,7 @@
 					return testInstruction.test(test.id);
 				});
 			}else if(typeof testInstruction === "string"){
-				// run only the.test where test.id==testInstruction
+				// run only the test where test.id===testInstruction
 				testList = this.tests.filter(test =>{
 					return test.id == testInstruction;
 				});
@@ -769,7 +770,9 @@
 								finish
 							).catch(
 								function(e){
-									logger.failTest([], test, e);
+									console.error("unexpected");
+									console.error(e);
+									logger.logNote("the test runner failed unexpectedly");
 									resolve(logger);
 								}
 							);
@@ -796,8 +799,26 @@
 			});
 		},
 
+		runRemote: function(testInstruction, options){
+			options = Object.assign(this.options, {console: this.options.remoteConsole}, options || {})
+			let logger = new this.Logger(Object.assign({}, options));
+			return this.run(testInstruction, logger, options).then(()=>{
+				let results = logger.results;
+				return JSON.stringify({
+					totalCount: logger.totalCount,
+					passCount: logger.passCount,
+					failCount: logger.failCount,
+					scaffoldFailCount: logger.scaffoldFailCount,
+					unexpected: logger.unexpected,
+					results: Object.keys(results).sort().map(k => results[k]),
+					logs: logger.logs
+				});
+			})
+		},
+
 		private: {
 			augmentIncludeExclude: augmentIncludeExclude
 		}
 	};
 });
+
