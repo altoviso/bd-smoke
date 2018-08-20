@@ -491,13 +491,18 @@
 
 		Logger: Logger,
 
+		injectScript: injectScript,
+
+		injectCss: injectCss,
+
 		options: {
 			nameSeparator: "/",
 			quitOnFirstFail: false,
 			include: null,
 			exclude: null,
 			logExcludes: false,
-			concurrent: false
+			concurrent: false,
+			user: {}
 		},
 
 		tests: // default test stack which can be populated by applying defTest to a test object
