@@ -200,6 +200,44 @@
 		}
 	};
 
+	function injectScript(src, type){
+		return new Promise(function(resolve, reject){
+			let node = document.createElement("script"),
+				handler = function(e){
+					if(e.type === "load"){
+						resolve();
+					}else{
+						reject(e);
+					}
+				};
+			node.addEventListener("load", handler, false);
+			node.addEventListener("error", handler, false);
+			node.src = src + (/\.js$/.test(src) ? "" : ".js");
+			node.type = type || "";
+			document.getElementsByTagName("script")[0].parentNode.appendChild(node);
+		});
+	}
+
+
+	function injectCss(href){
+		return new Promise(function(resolve, reject){
+			let node = document.createElement("link"),
+				handler = function(e){
+					if(e.type === "load"){
+						resolve();
+					}else{
+						reject(e);
+					}
+				};
+			node.addEventListener("load", handler, false);
+			node.addEventListener("error", handler, false);
+			node.type = "text/css";
+			node.rel = "stylesheet";
+			node.href = href;
+			document.getElementsByTagName("script")[0].parentNode.appendChild(node);
+		});
+	}
+
 	function augmentIncludeExclude(dest, value){
 		function getObject(path){
 			let result = dest;
