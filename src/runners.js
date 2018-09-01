@@ -2,7 +2,7 @@ import {isBrowser, isNode} from "./environment.js";
 import testTypes from "./testTypes.js";
 import Action from "./Action.js";
 import stringify from "./stringify.js";
-import {execute} from "./execute.js"
+import {execute} from "./execute.js";
 
 let noTestsHint = "check for typos in URL query/command line args, test ids, defBrowserTestRef args, the \"include\" option, and/or include options that don't include anything that is loaded";
 
@@ -37,7 +37,7 @@ function getTestList(testInstruction, tests, remoteTests){
 		if(remoteTests){
 			return test.type === testTypes.both || test.type === testTypes.browser || test.type === testTypes.remote;
 		}else{
-			return test.type === testTypes.both || (isBrowser && test.type === testTypes.browser) || (isNode && test.type === testTypes.node)
+			return test.type === testTypes.both || (isBrowser && test.type === testTypes.browser) || (isNode && test.type === testTypes.node);
 		}
 	}
 
@@ -49,7 +49,7 @@ function getCapabilities(capabilities, provider, caps, capPresets, logger){
 	let error = false;
 
 	let log = (msg) => {
-		logger.log("info", "capabilities", [msg]);
+		logger.log("info", 0, ["capabilities: " + msg]);
 		error = true;
 	};
 
@@ -67,7 +67,7 @@ function getCapabilities(capabilities, provider, caps, capPresets, logger){
 				if(capabilities[cap]){
 					result[cap] = capabilities[cap];
 				}else{
-					log('capability "' + cap + '" does not exist in capabilities');
+					log("capability \"" + cap + "\" does not exist in capabilities");
 				}
 			});
 		}
@@ -76,20 +76,20 @@ function getCapabilities(capabilities, provider, caps, capPresets, logger){
 	// now the presets
 	if(capPresets && capPresets.length){
 		if(!capabilities.presets){
-			log('capPreset given but no presets in capabilities');
+			log("capPreset given but no presets in capabilities");
 		}else{
 			capPresets.forEach(_preset => {
 				let preset = capabilities.presets[_preset];
 				if(!preset){
-					log('capPreset "' + _preset + '" given that does not exist in capabilites presets');
+					log("capPreset \"" + _preset + "\" given that does not exist in capabilities presets");
 				}else if(!Array.isArray(preset)){
-					log('capPreset "' + _preset + '" must be an array in capabilites presets');
+					log("capPreset \"" + _preset + "\" must be an array in capabilities presets");
 				}else{
 					preset.forEach(cap => {
 						if(capabilities[cap]){
 							result[cap] = capabilities[cap];
 						}else{
-							log('capability "' + cap + '" given in presets does not exist in capabilities');
+							log("capability \"" + cap + "\" given in presets does not exist in capabilities");
 						}
 					});
 				}
@@ -102,7 +102,7 @@ function getCapabilities(capabilities, provider, caps, capPresets, logger){
 			if(capabilities[cap]){
 				result[cap] = capabilities[cap];
 			}else{
-				log('capability "' + cap + '" given in presets does not exist in capabilities');
+				log("capability \"" + cap + "\" given in presets does not exist in capabilities");
 			}
 		});
 	}
@@ -132,7 +132,7 @@ function queueActions(action, args){
 			[arg[0].id, arg[1]]
 		));
 	}else{
-		dest.push([action.id, args])
+		dest.push([action.id, args]);
 	}
 }
 
@@ -143,7 +143,6 @@ function getQueuedActions(){
 		if(pendingActions.length){
 			_pendingActions = pendingActions;
 			pendingActions = [];
-			console.log('getQueuedActions:', pendingActions);
 			return true;
 		}else{
 			return false;
@@ -160,22 +159,26 @@ function getQueuedActions(){
 				setTimeout(check, 50);
 			}
 		})();
-	})
+	});
 }
 
 function waitForLoaderIdle(callback){
+	// eslint-disable-next-line no-undef
 	smoke.loaderIdle.then(loadError => callback(loadError));
 }
 
-function exec(testId, options, callback){
+function exec(testId, options){
+	// eslint-disable-next-line no-undef
 	return smoke.run(testId, 0, options, false, true).testUid;
 }
 
 function resetLog(){
+	// eslint-disable-next-line no-undef
 	return smoke.logger.reset();
 }
 
 function _getQueuedActions(callback){
+	// eslint-disable-next-line no-undef
 	smoke.getQueuedActions().then(instructions => callback(instructions));
 }
 
@@ -194,7 +197,7 @@ function executeActions(driver){
 				);
 			}).catch(e => {
 				reject(e);
-			})
+			});
 		})();
 	});
 }
@@ -203,8 +206,7 @@ function doBrowser(builder, capabilityName, testList, logger, options, remoteLog
 	let driver;
 	return builder.build().then(_driver => {
 		driver = _driver;
-
-	}).then(_ => {
+	}).then(() => {
 		let remoteUrl = options.remoteUrl;
 		if(/\?/.test(remoteUrl)){
 			// got a query string; make sure it has the remotelyControlled parameter
@@ -216,19 +218,19 @@ function doBrowser(builder, capabilityName, testList, logger, options, remoteLog
 			remoteUrl+= "?remotelyControlled";
 		}
 		return driver.get(remoteUrl);
-	}).then(_ => {
+	}).then(() => {
 		return driver.executeAsyncScript(waitForLoaderIdle);
 	}).then(loadingError => {
 		if(loadingError){
 			logger.log("smoke:error", 0, ["remote encountered an error loading test resources"]);
 			throw new Error("error loading test resources on remote browser");
 		}
-	}).then(_ => {
-		return driver.executeScript(resetLog)
+	}).then(() => {
+		return driver.executeScript(resetLog);
 	}).then(startupLog => {
 		startupLog.id = "startup-log";
 		remoteLogs.push(startupLog);
-	}).then(_ => {
+	}).then(() => {
 		let testList_ = testList.slice();
 		return new Promise(function(resolve, reject){
 			(function executeTestList(){
@@ -237,13 +239,13 @@ function doBrowser(builder, capabilityName, testList, logger, options, remoteLog
 				}else{
 					let test = testList_.shift();
 					if(test.type === testTypes.remote){
-						execute(test, logger, options, driver).then(_ => {
+						execute(test, logger, options, driver).then(() => {
 							executeTestList();
 						});
 					}else{
 						let testId = capabilityName + ":" + test.id;
 						logger.log("smoke:progress", 0, [testId + ": started"]);
-						driver.executeScript(exec, test.id, options.remoteOptions || 0).then(testUid => {
+						driver.executeScript(exec, test.id, options.remoteOptions || 0).then(testId => {
 							return executeActions(driver).then(log => {
 								log.id = testId;
 								remoteLogs.push(log);
@@ -254,21 +256,21 @@ function doBrowser(builder, capabilityName, testList, logger, options, remoteLog
 								logger.log("smoke:progress", 0, [msg]);
 								logger.log("smoke:remote-log", 0, [log], true);
 							});
-						}).then(_ => {
+						}).then(() => {
 							executeTestList();
 						}).catch(e => {
-							reject(e)
-						})
+							reject(e);
+						});
 					}
 				}
 			})();
 		});
-	}).then(_ => {
-		return driver.quit().then(_ => true);
+	}).then(() => {
+		return driver.quit().then(() => true);
 	}).catch(e => {
 		try{
 			logger.log("smoke:error", 0, ["remote crashed, capability aborted", e]);
-			return driver.quit().then(_ => true);
+			return driver.quit().then(() => true);
 		}catch(e){
 			logger.log("smoke:error", 0, ["webdriver crashed; it's likely the remote browser has not been shut down", e]);
 			return Promise.resolve(false);
@@ -276,19 +278,19 @@ function doBrowser(builder, capabilityName, testList, logger, options, remoteLog
 	}).catch(e => {
 		logger.log("smoke:error", 0, ["webdriver crashed; it's likely the remote browser has not been shut down", e]);
 		return false;
-	})
+	});
 }
 
 function runLocal(_testList, logger, options){
 	// execute each test in the testList
 	let testList = _testList.slice();
 	if(options.concurrent){
-		return Promise.all(testList.map(test => execute(test, logger, options))).then(_ => logger);
+		return Promise.all(testList.map(test => execute(test, logger, options).promise)).then(() => logger);
 	}else{
 		return new Promise((resolve) => {
 			(function finish(){
 				if(testList.length && !logger.unexpected){
-					execute(testList.shift(), logger, options).then(_ => {
+					execute(testList.shift(), logger, options).then(() => {
 						finish();
 					});
 				}else{
@@ -312,7 +314,7 @@ function runRemote(testList, logger, options, capabilities){
 	//         if test.type===remote
 	//              call smoke.run, pass driver to test
 	let remoteLogs = [];
-	const {Builder} = require('selenium-webdriver');
+	const {Builder} = require("selenium-webdriver");
 
 
 	function doNextCapability(){
@@ -326,11 +328,11 @@ function runRemote(testList, logger, options, capabilities){
 			builder.usingServer(options.provider.url || provider.url);
 		}
 		return doBrowser(builder, capName, testList, logger, options, remoteLogs).then(
-			_ => (capabilities.length ? doNextCapability() : remoteLogs)
+			() => (capabilities.length ? doNextCapability() : remoteLogs)
 		);
 	}
 
-	return doNextCapability().then(_ => {
+	return doNextCapability().then(() => {
 		// compute the totals across all remote logs
 		let totals = {totalCount: 0, passCount: 0, failCount: 0, scaffoldFailCount: 0};
 		let keys = Object.keys(totals);
@@ -351,15 +353,15 @@ function run(tests, testInstruction, logger, options, remote, resetLog){
 	let testList = getTestList(testInstruction, tests, remote);
 	if(!testList.length){
 		logger.log("smoke:info", 0, ["run: no tests run", noTestsHint]);
-		return Promise.resolve(false)
+		return Promise.resolve(false);
 	}
 	let testUid = getTestUid();
 	let theRunPromise;
 	if(remote){
-		let [capabilities, capabilitiesError] = getCapabilities(options.capabilities, options.provider, options.cap, options.capPreset, logger)
+		let [capabilities] = getCapabilities(options.capabilities, options.provider, options.cap, options.capPreset, logger);
 		if(!capabilities.length){
 			logger.log("smoke:info", 0, ["run: running remote tests, but no capabilities to test"]);
-			return Promise.resolve(false)
+			return Promise.resolve(false);
 		}
 		theRunPromise = runRemote(testList, logger, options, capabilities);
 	}else{
@@ -385,8 +387,9 @@ function runDefault(tests, options, logger){
 		if(!options.noDefaultPrint){
 			let html = "";
 			messages.forEach(msg => {
+				// eslint-disable-next-line no-console
 				console.log(msg);
-				html += "<p>" + msg + "</p>"
+				html += "<p>" + msg + "</p>";
 			});
 			if(typeof document !== "undefined"){
 				let node = document.getElementById("bd-smoke-results");
@@ -398,41 +401,42 @@ function runDefault(tests, options, logger){
 	let remote;
 	if(isNode){
 		if(options.remote){
-			logger.log("smoke:info", 0, ['"remote" config option is true, therefore running remote tests']);
+			logger.log("smoke:info", 0, ["\"remote\" config option is true, therefore running remote tests"]);
 			remote = true;
 		}else if(options.cap && options.cap.length){
-			logger.log("smoke:info", 0, ['"cap" config option(s) given, therefore running remote tests']);
+			logger.log("smoke:info", 0, ["\"cap\" config option(s) given, therefore running remote tests"]);
 			remote = true;
 		}else if(options.capPreset && options.capPreset.length){
-			logger.log("smoke:info", 0, ['"capPreset" config option(s) given, therefore running remote tests']);
+			logger.log("smoke:info", 0, ["\"capPreset\" config option(s) given, therefore running remote tests"]);
 			remote = true;
 		}else if(tests.some(test => test.type === testTypes.node || test.type === testTypes.both)){
-			logger.log("smoke:info", 0, ['running native node tests on node']);
+			logger.log("smoke:info", 0, ["running native node tests on node"]);
 			remote = false;
 		}else if(tests.some(test => test.type !== testTypes.node)){
-			logger.log("smoke:info", 0, ['no native node tests, but browser and/or remote tests found, therefore running remote tests'])
+			logger.log("smoke:info", 0, ["no native node tests, but browser and/or remote tests found, therefore running remote tests"]);
 			remote = true;
 		}else{
-			logger.log("smoke:info", 0, ['no tests found that can run on node']);
-			return Promise.resolve({ranRemote: false, localLog: logger})
+			logger.log("smoke:info", 0, ["no tests found that can run on node"]);
+			return Promise.resolve({ranRemote: false, localLog: logger});
 		}
 	}else if(tests.some(test => test.type === testTypes.browser || test.type === testTypes.both)){
-		logger.log("smoke:info", 0, ['running browser tests']);
+		logger.log("smoke:info", 0, ["running browser tests"]);
 		remote = false;
 	}else{
-		logger.log("smoke:info", 0, ['no tests found that can run on the browser']);
-		return Promise.resolve({ranRemote: false, localLog: logger})
+		logger.log("smoke:info", 0, ["no tests found that can run on the browser"]);
+		return Promise.resolve({ranRemote: false, localLog: logger});
 	}
 
 	if(remote){
 		return run(tests, "*", logger, options, true, false).then(remoteLogs => {
 			if(remoteLogs){
+				// eslint-disable-next-line no-console
 				!options.noDefaultPrint && console.log(stringify(remoteLogs));
-				log("Cummulative Remote Results:", remoteLogs);
+				log("Cumulative Remote Results:", remoteLogs);
 				log("Local Results:", logger);
 				print();
 			}else{
-				logger.log("smoke:unexpected", 0, ['remote tests did not complete normally']);
+				logger.log("smoke:unexpected", 0, ["remote tests did not complete normally"]);
 			}
 			return {ranRemote: true, localLog: logger, remoteLogs: remoteLogs};
 		});

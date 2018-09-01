@@ -10,6 +10,7 @@
 	},
 	"dependencies": {},
 	"devDependencies": {
+		"eslint": "^5.5.0",
 		"grunt": "^1.0.3",
 		"grunt-cli": "^1.2.0",
 		"grunt-contrib-watch": "^1.1.0",

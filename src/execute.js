@@ -1,4 +1,4 @@
-import getPromise from "./getPromise.js"
+import getPromise from "./getPromise.js";
 
 function failScaffold(context, node, phase, e, quitOnFirstFail, logger){
 	if(quitOnFirstFail){
@@ -20,7 +20,7 @@ function getTestTree(test, logger, include){
 	// level = 2
 	// then...
 	// matchedPaths = [0, 1]..that is, path[0] matches to level 0, path[1] matches to level 1
-	let matchedPaths = include && include.map(_ => -1);
+	let matchedPaths = include && include.map(() => -1);
 
 	function calcIncluded(id, level){
 		let result = false;
@@ -29,6 +29,7 @@ function getTestTree(test, logger, include){
 		include.forEach((path, i) => {
 			if(path.length > level && matchedPaths[i] === prevLevel && path[level] === id){
 				matchedPaths[i] = level;
+				// noinspection JSValidateTypes
 				result = result === EXACT || path.length === nextLevel ? EXACT : true;
 			}
 		});
@@ -50,16 +51,19 @@ function getTestTree(test, logger, include){
 			if(node.test){
 				if(typeof node.test === "function"){
 					// if not to the end of the include path, exclude this test
+					// noinspection JSValidateTypes
 					result.test = !checkIncluded || included === EXACT ? node.test : EXCLUDED;
 				}else{
 					//included can only be true or EXACT; if it's exact, then stop checking
-					result.test = traverse(node.test, level + 1, result, checkIncluded && included !== EXACT)
+					// noinspection JSValidateTypes
+					result.test = traverse(node.test, level + 1, result, checkIncluded && included !== EXACT);
 				}
 			}else{
-				result.tests = node.tests.map((test, i) => {
+				result.tests = node.tests.map((test) => {
 					//included can only be true or EXACT; if it's exact, then stop checking
-					return traverse(test, level + 1, result, checkIncluded && included !== EXACT)
-				})
+					// noinspection JSValidateTypes
+					return traverse(test, level + 1, result, checkIncluded && included !== EXACT);
+				});
 			}
 		}
 		if(checkIncluded){
@@ -70,7 +74,7 @@ function getTestTree(test, logger, include){
 	}
 
 	try{
-		return [traverse(test, 0, null, !!include), false]
+		return [traverse(test, 0, null, !!include), false];
 	}catch(e){
 		logger.log("smoke:unexpected", test.id, ["failed to filter tests for includes", e]);
 		return [{id: test.id, test: EXCLUDED}, true];
@@ -78,12 +82,12 @@ function getTestTree(test, logger, include){
 }
 
 const
-	BEFORE = Symbol('before'),
-	BEFORE_EACH = Symbol('beforeEach'),
-	TEST = Symbol('test'),
-	AFTER_EACH = Symbol('afterEach'),
-	AFTER = Symbol('after'),
-	FINALLY = Symbol('finally'),
+	BEFORE = Symbol("before"),
+	BEFORE_EACH = Symbol("beforeEach"),
+	TEST = Symbol("test"),
+	AFTER_EACH = Symbol("afterEach"),
+	AFTER = Symbol("after"),
+	FINALLY = Symbol("finally"),
 	EXCLUDED = Symbol("excluded"),
 	EXACT = Symbol("smoke-prepareTest-exact"),
 	phaseToMethodName = {
@@ -91,7 +95,7 @@ const
 		[BEFORE_EACH]: "beforeEach",
 		[AFTER_EACH]: "afterEach",
 		[AFTER]: "after",
-			[FINALLY]: "finally"
+		[FINALLY]: "finally"
 	},
 	phaseToText = {
 		[BEFORE]: "before",
@@ -118,18 +122,7 @@ function execute(test, logger, options, driver){
 
 	function* getWorkStream(node){
 		context.push(node);
-		if(node.child){
-			yield* getWorkStream(node.child);
-			if(node.afterEach && node.executed && !node.abort){
-				yield [AFTER_EACH, context, node]
-			}
-			if(node.after && node.executed && !node.abort){
-				yield [AFTER, context, node]
-			}
-			if(node.finally){
-				yield [FINALLY, context, node]
-			}
-		}else if(node.tests){
+		if(node.tests){
 			let atLeastOneExecuted = false;
 			for(const test of node.tests){
 				// force executing beforeEach (if any) for each test
@@ -138,41 +131,41 @@ function execute(test, logger, options, driver){
 				yield* getWorkStream(test);
 				atLeastOneExecuted = atLeastOneExecuted || node.executed;
 				if(node.afterEach && node.executed && !node.abort){
-					yield [AFTER_EACH, context, node]
+					yield [AFTER_EACH, context, node];
 				}
 				if(node.abort){
 					break;
 				}
 			}
 			if(node.after && atLeastOneExecuted && !node.abort){
-				yield [AFTER, context, node]
+				yield [AFTER, context, node];
 			}
 			if(node.finally){
-				yield [FINALLY, context, node]
+				yield [FINALLY, context, node];
 			}
 		}else if(node.test !== EXCLUDED){
 			for(const n of context){
 				n.executed = true;
 				if(n.before && !n[BEFORE] && !n.abort){
-					yield [BEFORE, context, n]
+					yield [BEFORE, context, n];
 				}
 			}
 			for(const n of context){
 				if(n.beforeEach && !n[BEFORE_EACH] && !n.abort){
-					yield [BEFORE_EACH, context, n]
+					yield [BEFORE_EACH, context, n];
 				}
 			}
 			if(!node.abort){
 				yield [TEST, context, node];
 			}
 			if(node.afterEach && !node.abort){
-				yield [AFTER_EACH, context, node]
+				yield [AFTER_EACH, context, node];
 			}
 			if(node.after && !node.abort){
-				yield [AFTER, context, node]
+				yield [AFTER, context, node];
 			}
 			if(node.finally){
-				yield [FINALLY, context, node]
+				yield [FINALLY, context, node];
 			}
 		}else{ // node.test===EXCLUDED
 			logger.excludeTest(context);
@@ -194,6 +187,7 @@ function execute(test, logger, options, driver){
 		}// else testTree is a good tree with some tests to run
 		let workStream = getWorkStream(testTree);
 		(function doWork(){
+			// eslint-disable-next-line no-constant-condition
 			while(true){
 				let work = workStream.next();
 				if(work.done){

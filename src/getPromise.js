@@ -59,13 +59,13 @@ export default function getPromise(resolver, rejecter){
 			return p;
 		},
 		then(onFulfilled, onRejected){
-			return p.then(onFulfilled, onRejected)
+			return p.then(onFulfilled, onRejected);
 		},
 		catch(onRejected){
-			return p.catch(onRejected)
+			return p.catch(onRejected);
 		},
 		finally(onFinally){
-			return p.finally(onFinally)
+			return p.finally(onFinally);
 		}
 	});
 	return p;

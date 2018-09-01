@@ -1,5 +1,5 @@
-import {isBrowser, isNode} from "./environment.js";
-import getPromise from "./getPromise.js"
+import {isNode} from "./environment.js";
+import getPromise from "./getPromise.js";
 
 export default function getLoadControlClass(log, onLoadingComplete){
 	class LoadControl {
@@ -35,6 +35,7 @@ export default function getLoadControlClass(log, onLoadingComplete){
 
 		resolve(resolution, errorInfo){
 			if(this.promise.resolved){
+				// eslint-disable-next-line no-console
 				console.warn("unexpected");
 				return;
 			}
@@ -59,12 +60,12 @@ export default function getLoadControlClass(log, onLoadingComplete){
 
 		static isLegalResourceName(name, type){
 			if(typeof name !== "string"){
-				log('a resource name was given to load a ' + type + ' resource that is not a string');
-				return false
+				log("a resource name was given to load a " + type + " resource that is not a string");
+				return false;
 			}
-			if(type === 'AMD' && /^\./.test(name)){
-				log('illegal to AMD require a relative module name (' + name + ')');
-				return false
+			if(type === "AMD" && /^\./.test(name)){
+				log("illegal to AMD require a relative module name (" + name + ")");
+				return false;
 			}
 			return true;
 		}
@@ -75,7 +76,7 @@ export default function getLoadControlClass(log, onLoadingComplete){
 				return false;
 			}
 			if(LoadControl.injections.has(resourceName)){
-				return LoadControl.injections.get(resourceName)
+				return LoadControl.injections.get(resourceName);
 			}else{
 				let control;
 				if(type === "CSS" && isNode){
@@ -118,7 +119,7 @@ export default function getLoadControlClass(log, onLoadingComplete){
 			}
 			let name = resourceName;
 			if(/^\./.test(name)){
-				// if resourceName is relative, then it's relative to the project directory
+				// if resourceName is relative, then it"s relative to the project directory
 				// TODO: make this an option?
 				name = LoadControl.injectRelativePrefix + name;
 			}
@@ -151,7 +152,7 @@ export default function getLoadControlClass(log, onLoadingComplete){
 					type = "module";
 				}
 				LoadControl.browserInject(control, "script", {src: control.loadedName = src, type: type || ""});
-			})
+			});
 		}
 
 		static injectCss(resourceName){
@@ -176,9 +177,9 @@ export default function getLoadControlClass(log, onLoadingComplete){
 		}
 
 		static loadAmdModule(moduleName){
-			return LoadControl.load(resourceName, "script", function(control, module){
+			return LoadControl.load(moduleName, "script", function(control, module){
 				try{
-					require([module], function(result){
+					require([module], function(){
 						control.resolve(true);
 					});
 				}catch(e){

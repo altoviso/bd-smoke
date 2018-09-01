@@ -1,41 +1,61 @@
 let isBrowser = typeof window !== "undefined";
 let isNode = !isBrowser;
 
-let Timer;
+let Timer = (function(){
+	if(typeof window !== "undefined"){
+		if(window.performance){
+			return class {
+				constructor(){
+					this.startMark = performance.now();
+				}
 
-if(typeof window!=="undefined"){
-	if(window.performance){
-		Timer = class {
-			constructor(){
-				this.startMark = performance.now();
-			}
+				start(){
+					this.startMark = performance.now();
+				}
 
-			start(){
-				this.startMark = performance.now();
-			}
+				get time(){
+					// return elapsed time in ms since the last call of start or construction
+					return (performance.now() - this.startMark) * 1000;
+				}
 
-			get time(){
-				// return elapsed time in ms since the last call of start or construction
-				return (performance.now() - this.startMark) * 1000;
-			}
+				get startTime(){
+					return this.startMark;
+				}
+			};
+		}else{
+			return class {
+				constructor(){
+					this.startMark = new Date();
+				}
 
-			get startTime(){
-				return this.startMark;
-			}
-		};
+				start(){
+					this.startMark = new Date();
+				}
+
+				get time(){
+					// return elapsed time in ms since the last call of start or construction
+					return (new Date()).getTime() - this.startMark.getTime();
+				}
+
+				get startTime(){
+					return this.startMark;
+				}
+			};
+		}
 	}else{
-		Timer = class {
+		return class {
 			constructor(){
-				this.startMark = new Date();
+				this.startMark = process.hrtime();
 			}
 
 			start(){
-				this.startMark = new Date();
+				return (this.startMark = process.hrtime());
 			}
 
 			get time(){
 				// return elapsed time in ms since the last call of start or construction
-				return (new Date()).getTime() - this.startMark.getTime();
+				let diff = process.hrtime(this.startMark);
+				return (diff[0] * 1000) + (diff[1] / 1000000);
 			}
 
 			get startTime(){
@@ -43,29 +63,9 @@ if(typeof window!=="undefined"){
 			}
 		};
 	}
-}else{
-	Timer = class {
-		constructor(){
-			this.startMark = process.hrtime();
-		}
+})();
 
-		start(){
-			return (this.startMark = process.hrtime());
-		}
-
-		get time(){
-			// return elapsed time in ms since the last call of start or construction
-			let diff = process.hrtime(this.startMark);
-			return (diff[0] * 1000) + (diff[1] / 1000000);
-		}
-
-		get startTime(){
-			return this.startMark;
-		}
-	};
-}
-
-var Timer$1 = Timer;
+/* eslint-disable no-console */
 
 const Logger = class {
 	constructor(options){
@@ -88,8 +88,13 @@ const Logger = class {
 		return result;
 	}
 
+	updateOptions(options){
+		this.options = Object.assign({}, this.options, options);
+		this._console = !!this.options.console;
+	}
+
 	getResults(){
-		let result = {
+		return {
 			unexpected: this._unexpected,
 			totalCount: this._totalCount,
 			passCount: this._passCount,
@@ -98,7 +103,6 @@ const Logger = class {
 			results: this._results,
 			logs: this._logs
 		};
-		return result;
 	}
 
 	get totalCount(){
@@ -122,11 +126,11 @@ const Logger = class {
 	}
 
 	get results(){
-		return this._results
+		return this._results;
 	}
 
 	get logs(){
-		return this._logs
+		return this._logs;
 	}
 
 	getLog(id){
@@ -155,7 +159,7 @@ const Logger = class {
 	startTest(context){
 		this._totalCount++;
 		let id = ++(this._idSeed);
-		this._results[id] = [this.getName(context), (new Date()).getTime(), new Timer$1()];
+		this._results[id] = [this.getName(context), (new Date()).getTime(), new Timer()];
 		return id;
 	}
 
@@ -314,13 +318,13 @@ function getPromise(resolver, rejecter){
 			return p;
 		},
 		then(onFulfilled, onRejected){
-			return p.then(onFulfilled, onRejected)
+			return p.then(onFulfilled, onRejected);
 		},
 		catch(onRejected){
-			return p.catch(onRejected)
+			return p.catch(onRejected);
 		},
 		finally(onFinally){
-			return p.finally(onFinally)
+			return p.finally(onFinally);
 		}
 	});
 	return p;
@@ -360,6 +364,7 @@ function getLoadControlClass(log, onLoadingComplete){
 
 		resolve(resolution, errorInfo){
 			if(this.promise.resolved){
+				// eslint-disable-next-line no-console
 				console.warn("unexpected");
 				return;
 			}
@@ -384,12 +389,12 @@ function getLoadControlClass(log, onLoadingComplete){
 
 		static isLegalResourceName(name, type){
 			if(typeof name !== "string"){
-				log('a resource name was given to load a ' + type + ' resource that is not a string');
-				return false
+				log("a resource name was given to load a " + type + " resource that is not a string");
+				return false;
 			}
-			if(type === 'AMD' && /^\./.test(name)){
-				log('illegal to AMD require a relative module name (' + name + ')');
-				return false
+			if(type === "AMD" && /^\./.test(name)){
+				log("illegal to AMD require a relative module name (" + name + ")");
+				return false;
 			}
 			return true;
 		}
@@ -400,7 +405,7 @@ function getLoadControlClass(log, onLoadingComplete){
 				return false;
 			}
 			if(LoadControl.injections.has(resourceName)){
-				return LoadControl.injections.get(resourceName)
+				return LoadControl.injections.get(resourceName);
 			}else{
 				let control;
 				if(type === "CSS" && isNode){
@@ -443,7 +448,7 @@ function getLoadControlClass(log, onLoadingComplete){
 			}
 			let name = resourceName;
 			if(/^\./.test(name)){
-				// if resourceName is relative, then it's relative to the project directory
+				// if resourceName is relative, then it"s relative to the project directory
 				// TODO: make this an option?
 				name = LoadControl.injectRelativePrefix + name;
 			}
@@ -476,7 +481,7 @@ function getLoadControlClass(log, onLoadingComplete){
 					type = "module";
 				}
 				LoadControl.browserInject(control, "script", {src: control.loadedName = src, type: type || ""});
-			})
+			});
 		}
 
 		static injectCss(resourceName){
@@ -490,9 +495,10 @@ function getLoadControlClass(log, onLoadingComplete){
 		}
 
 		static loadNodeModule(moduleName){
-			let loadPromise = LoadControl.load(moduleName, "node module", function(control, fileName){
+			return LoadControl.load(moduleName, "node module", function(control, fileName){
 				try{
-					control.resolve(require((control.loadedName = fileName)));
+					require((control.loadedName = fileName));
+					control.resolve(true);
 				}catch(e){
 					control.resolve(false, e);
 				}
@@ -500,10 +506,10 @@ function getLoadControlClass(log, onLoadingComplete){
 		}
 
 		static loadAmdModule(moduleName){
-			return LoadControl.load(resourceName, "script", function(control, module){
+			return LoadControl.load(moduleName, "script", function(control, module){
 				try{
-					require([module], function(result){
-						control.resolve(result);
+					require([module], function(){
+						control.resolve(true);
 					});
 				}catch(e){
 					control.resolve(false, e);
@@ -553,14 +559,15 @@ class Action {
 			if(action === Action.actionTestComplete){
 				// the test has completed or been aborted
 				if(list.length){
-					console.warn(unexpected);
+					// eslint-disable-next-line no-console
+					console.warn("unexpected");
 				}
-				return driverActions.perform().then(_ => instruction[1][0]);
+				return driverActions.perform().then(() => instruction[1][0]);
 			}else{
 				action.proc(driver, driverActions, scratch, ...instruction[1]);
 			}
 		}
-		return driverActions.perform().then(_ => false);
+		return driverActions.perform().then(() => false);
 	}
 
 	static action(...list){
@@ -591,14 +598,12 @@ Action.add("sendKeys", (driver, action, scratch, ...args) => {
 
 Action.add("keyDown", (driver, action, scratch, ...args) => {
 	args.forEach(k => {
-		Object.keys(KEYS).forEach(key => KEYS[key] === k ? console.log("keyDown:" + key) : 0);
 		action.keyDown(k);
 	});
 });
 
 Action.add("keyUp", (driver, action, scratch, ...args) => {
 	args.forEach(k => {
-		Object.keys(KEYS).forEach(key => KEYS[key] === k ? console.log("keyUp:" + key) : 0);
 		action.keyUp(k);
 	});
 });
@@ -607,68 +612,69 @@ Action.add("click", (driver, action, scratch, id) => {
 	action.click(driver.findElement({id: id}));
 });
 
-let KEYS = Action.action.keys = {
-	null: '\uE000',
-	cancel: '\uE001',
-	help: '\uE002',
-	back_space: '\uE003',
-	tab: '\uE004',
-	clear: '\uE005',
-	return: '\uE006',
-	enter: '\uE007',
-	shift: '\uE008',
-	control: '\uE009',
-	alt: '\uE00A',
-	pause: '\uE00B',
-	escape: '\uE00C',
-	space: '\uE00D',
-	pageUp: '\uE00E',
-	pageDown: '\uE00F',
-	end: '\uE010',
-	home: '\uE011',
-	arrowLeft: '\uE012',
-	left: '\uE012',
-	arrowUp: '\uE013',
-	up: '\uE013',
-	arrowRight: '\uE014',
-	right: '\uE014',
-	arrowDown: '\uE015',
-	down: '\uE015',
-	insert: '\uE016',
-	delete: '\uE017',
-	semicolon: '\uE018',
-	equals: '\uE019',
-	numpad0: '\uE01A',
-	numpad1: '\uE01B',
-	numpad2: '\uE01C',
-	numpad3: '\uE01D',
-	numpad4: '\uE01E',
-	numpad5: '\uE01F',
-	numpad6: '\uE020',
-	numpad7: '\uE021',
-	numpad8: '\uE022',
-	numpad9: '\uE023',
-	multiply: '\uE024',
-	add: '\uE025',
-	separator: '\uE026',
-	subtract: '\uE027',
-	decimal: '\uE028',
-	divide: '\uE029',
-	f1: '\uE031',
-	f2: '\uE032',
-	f3: '\uE033',
-	f4: '\uE034',
-	f5: '\uE035',
-	f6: '\uE036',
-	f7: '\uE037',
-	f8: '\uE038',
-	f9: '\uE039',
-	f10: '\uE03A',
-	f11: '\uE03B',
-	f12: '\uE03C',
-	command: '\uE03D',
-	meta: '\uE03D',
-	zenkakuHankaku: '\uE040'
+// these are take verbatim from selenium-webdriver
+Action.action.keys = {
+	null: "\uE000",
+	cancel: "\uE001",
+	help: "\uE002",
+	back_space: "\uE003",
+	tab: "\uE004",
+	clear: "\uE005",
+	return: "\uE006",
+	enter: "\uE007",
+	shift: "\uE008",
+	control: "\uE009",
+	alt: "\uE00A",
+	pause: "\uE00B",
+	escape: "\uE00C",
+	space: "\uE00D",
+	pageUp: "\uE00E",
+	pageDown: "\uE00F",
+	end: "\uE010",
+	home: "\uE011",
+	arrowLeft: "\uE012",
+	left: "\uE012",
+	arrowUp: "\uE013",
+	up: "\uE013",
+	arrowRight: "\uE014",
+	right: "\uE014",
+	arrowDown: "\uE015",
+	down: "\uE015",
+	insert: "\uE016",
+	delete: "\uE017",
+	semicolon: "\uE018",
+	equals: "\uE019",
+	numpad0: "\uE01A",
+	numpad1: "\uE01B",
+	numpad2: "\uE01C",
+	numpad3: "\uE01D",
+	numpad4: "\uE01E",
+	numpad5: "\uE01F",
+	numpad6: "\uE020",
+	numpad7: "\uE021",
+	numpad8: "\uE022",
+	numpad9: "\uE023",
+	multiply: "\uE024",
+	add: "\uE025",
+	separator: "\uE026",
+	subtract: "\uE027",
+	decimal: "\uE028",
+	divide: "\uE029",
+	f1: "\uE031",
+	f2: "\uE032",
+	f3: "\uE033",
+	f4: "\uE034",
+	f5: "\uE035",
+	f6: "\uE036",
+	f7: "\uE037",
+	f8: "\uE038",
+	f9: "\uE039",
+	f10: "\uE03A",
+	f11: "\uE03B",
+	f12: "\uE03C",
+	command: "\uE03D",
+	meta: "\uE03D",
+	zenkakuHankaku: "\uE040"
 };
 
 function getStringify(indentFactor, newLine, typeFilter){
@@ -828,7 +834,7 @@ function argsToOptions(args, _normalizeOptionName){
 	// for any value of the form "<value>" or '<value>', remove the surrounding quotes
 	// make sure everything is trimmed up
 
-	let normalizeName = _normalizeOptionName ? (name)= (normalizeOptionName(_normalizeOptionName(name))) : normalizeOptionName;
+	let normalizeName = _normalizeOptionName ? (name) => (normalizeOptionName(_normalizeOptionName(name))) : normalizeOptionName;
 
 	let options = {};
 	args.forEach(arg => {
@@ -849,7 +855,7 @@ function argsToOptions(args, _normalizeOptionName){
 			}
 		}else if(arg){
 			arg = normalizeName(arg);
-			if(/^\!(.+)/.test(arg)){
+			if(/^!(.+)/.test(arg)){
 				options[arg.substring(1)] = false;
 			}else{
 				options[arg] = true;
@@ -865,15 +871,16 @@ function processOptions(options, dest){
 	// toArray also filters out falsey values
 	let toArray = (src) => (Array.isArray(src) ? src : [src]).filter(_ => _);
 	let processInclude = (dest, value) => {
-		value.split(/\;|\,/).forEach(item => {
-			item = item.split(/\.|\//).map(x => x.trim()).filter(x => !!x);
+		value.split(/[;,]/).forEach(item => {
+			item = item.split(/[./]/).map(x => x.trim()).filter(x => !!x);
 			item.length && dest.push(item);
 		});
 		return dest;
 	};
 	let processCommaList = (dest, src) => {
-		return dest.concat(src.split(/\,\;/).map(s => s.trim()).filter(s => !!s));
+		return dest.concat(src.split(/[,;]/).map(s => s.trim()).filter(s => !!s));
 	};
+
 	Object.keys(options).forEach(name => {
 		let value = options[name];
 		switch(name){
@@ -883,7 +890,7 @@ function processOptions(options, dest){
 				break;
 			case "package":
 				toArray(value).forEach(value => {
-					value.split(/\,\;/).map(s => s.trim()).filter(s => !!s).forEach(p => {
+					value.split(/[,;]/).map(s => s.trim()).filter(s => !!s).forEach(p => {
 						let split = p.split(":").map(item => item.trim());
 						require.config({packages: [{name: split[0], location: split[1], main: split[2]}]});
 					});
@@ -929,7 +936,7 @@ const both = {
 		return "both";
 	}
 };
-const remote$1 = {
+const remote = {
 	toString(){
 		return "remote";
 	}
@@ -939,7 +946,7 @@ const testTypes = {
 	browser:browser,
 	node:node,
 	both:both,
-	remote:remote$1
+	remote:remote
 };
 
 function checkTest(test, logger){
@@ -964,7 +971,7 @@ function checkTest(test, logger){
 		if(typeof node.id !== "string" || !node.id){
 			logError("each test must have a non-empty identifier");
 		}
-		["before", "beforeEach", "after", "afterEach"].forEach(name => {
+		["before", "beforeEach", "after", "afterEach", "finally"].forEach(name => {
 			if(node[name]){
 				if(typeof node[name] !== "function"){
 					logError("scaffold " + name + " must be a function");
@@ -982,7 +989,7 @@ function checkTest(test, logger){
 		if(node.test){
 			if(typeof node.test === "function"){
 				result.test = node.test;
-			}else if(note.test instanceof Object){
+			}else if(node.test instanceof Object){
 				result.test = traverse(node.test);
 			}else{
 				logError(node, "test must be either a test object or a function");
@@ -1077,15 +1084,16 @@ function getTestTree(test, logger, include){
 	// level = 2
 	// then...
 	// matchedPaths = [0, 1]..that is, path[0] matches to level 0, path[1] matches to level 1
-	let matchedPaths = include && include.map(_ => -1);
+	let matchedPaths = include && include.map(() => -1);
 
-	function calcIncluded(checkInclude, id, level){
+	function calcIncluded(id, level){
 		let result = false;
 		let prevLevel = level - 1;
 		let nextLevel = level + 1;
 		include.forEach((path, i) => {
 			if(path.length > level && matchedPaths[i] === prevLevel && path[level] === id){
 				matchedPaths[i] = level;
+				// noinspection JSValidateTypes
 				result = result === EXACT || path.length === nextLevel ? EXACT : true;
 			}
 		});
@@ -1093,34 +1101,32 @@ function getTestTree(test, logger, include){
 	}
 
 	function traverse(node, level, parent, checkIncluded){
-		let included = !checkIncluded || calcIncluded(checkInclude, node.id, level);
+		let included = !checkIncluded || calcIncluded(node.id, level);
 		let result = {id: node.id, parent: parent};
 		if(!included){
 			result.test = EXCLUDED;
 		}else{
+			// included can ONLY be true or EXACT at this point
 			node.before && (result.before = node.before);
 			node.after && (result.after = node.after);
+			node.finally && (result.finally = node.finally);
 			node.beforeEach && (result.beforeEach = node.beforeEach);
 			node.afterEach && (result.afterEach = node.afterEach);
 			if(node.test){
 				if(typeof node.test === "function"){
 					// if not to the end of the include path, exclude this test
+					// noinspection JSValidateTypes
 					result.test = !checkIncluded || included === EXACT ? node.test : EXCLUDED;
 				}else{
-					// if included===EXACT, then no reason to keep checking for include
-					result.test = traverse(node.test, level + 1, checkIncluded && included !== EXACT);
+					//included can only be true or EXACT; if it's exact, then stop checking
+					// noinspection JSValidateTypes
+					result.test = traverse(node.test, level + 1, result, checkIncluded && included !== EXACT);
 				}
 			}else{
-				result.tests = node.tests.map((test, i) => {
-					if(typeof test === "function"){
-						// implied testId of the index
-						return traverse({id: i, test: test}, level + 1, result, checkIncluded)
-					}else if(Array.isArray(test)){
-						// [id, test]
-						returntraverse({id: test[0], test: test[1]}, level + 1, result, checkIncluded);
-					}else{
-						return traverse(test, level + 1, result, checkIncluded)
-					}
+				result.tests = node.tests.map((test) => {
+					//included can only be true or EXACT; if it's exact, then stop checking
+					// noinspection JSValidateTypes
+					return traverse(test, level + 1, result, checkIncluded && included !== EXACT);
 				});
 			}
 		}
@@ -1132,7 +1138,7 @@ function getTestTree(test, logger, include){
 	}
 
 	try{
-		return [traverse(test, 0, !!include), false]
+		return [traverse(test, 0, null, !!include), false];
 	}catch(e){
 		logger.log("smoke:unexpected", test.id, ["failed to filter tests for includes", e]);
 		return [{id: test.id, test: EXCLUDED}, true];
@@ -1140,25 +1146,28 @@ function getTestTree(test, logger, include){
 }
 
 const
-	BEFORE = Symbol('before'),
-	BEFORE_EACH = Symbol('beforeEach'),
-	TEST = Symbol('test'),
-	AFTER_EACH = Symbol('afterEach'),
-	AFTER = Symbol('after'),
+	BEFORE = Symbol("before"),
+	BEFORE_EACH = Symbol("beforeEach"),
+	TEST = Symbol("test"),
+	AFTER_EACH = Symbol("afterEach"),
+	AFTER = Symbol("after"),
+	FINALLY = Symbol("finally"),
 	EXCLUDED = Symbol("excluded"),
 	EXACT = Symbol("smoke-prepareTest-exact"),
 	phaseToMethodName = {
 		[BEFORE]: "before",
 		[BEFORE_EACH]: "beforeEach",
 		[AFTER_EACH]: "afterEach",
-		[AFTER]: "after"
+		[AFTER]: "after",
+		[FINALLY]: "finally"
 	},
 	phaseToText = {
 		[BEFORE]: "before",
 		[BEFORE_EACH]: "before-each",
 		[TEST]: "test",
 		[AFTER_EACH]: "after-each",
-		[AFTER]: "after"
+		[AFTER]: "after",
+		[FINALLY]: "finally"
 	};
 
 function execute(test, logger, options, driver){
@@ -1177,15 +1186,7 @@ function execute(test, logger, options, driver){
 
 	function* getWorkStream(node){
 		context.push(node);
-		if(node.child){
-			yield* getWorkStream(node.child);
-			if(node.afterEach && node.executed && !node.abort){
-				yield [AFTER_EACH, context, node];
-			}
-			if(node.after && node.executed && !node.abort){
-				yield [AFTER, context, node];
-			}
-		}else if(node.tests){
+		if(node.tests){
 			let atLeastOneExecuted = false;
 			for(const test of node.tests){
 				// force executing beforeEach (if any) for each test
@@ -1202,6 +1203,9 @@ function execute(test, logger, options, driver){
 			}
 			if(node.after && atLeastOneExecuted && !node.abort){
 				yield [AFTER, context, node];
+			}
+			if(node.finally){
+				yield [FINALLY, context, node];
 			}
 		}else if(node.test !== EXCLUDED){
 			for(const n of context){
@@ -1224,6 +1228,9 @@ function execute(test, logger, options, driver){
 			if(node.after && !node.abort){
 				yield [AFTER, context, node];
 			}
+			if(node.finally){
+				yield [FINALLY, context, node];
+			}
 		}else{ // node.test===EXCLUDED
 			logger.excludeTest(context);
 		}
@@ -1244,6 +1251,7 @@ function execute(test, logger, options, driver){
 		}// else testTree is a good tree with some tests to run
 		let workStream = getWorkStream(testTree);
 		(function doWork(){
+			// eslint-disable-next-line no-constant-condition
 			while(true){
 				let work = workStream.next();
 				if(work.done){
@@ -1345,7 +1353,7 @@ function getTestList(testInstruction, tests, remoteTests){
 		if(remoteTests){
 			return test.type === testTypes.both || test.type === testTypes.browser || test.type === testTypes.remote;
 		}else{
-			return test.type === testTypes.both || (isBrowser && test.type === testTypes.browser) || (isNode && test.type === testTypes.node)
+			return test.type === testTypes.both || (isBrowser && test.type === testTypes.browser) || (isNode && test.type === testTypes.node);
 		}
 	}
 
@@ -1357,7 +1365,7 @@ function getCapabilities(capabilities, provider, caps, capPresets, logger){
 	let error = false;
 
 	let log = (msg) => {
-		logger.log("info", "capabilities", [msg]);
+		logger.log("info", 0, ["capabilities: " + msg]);
 		error = true;
 	};
 
@@ -1375,7 +1383,7 @@ function getCapabilities(capabilities, provider, caps, capPresets, logger){
 				if(capabilities[cap]){
 					result[cap] = capabilities[cap];
 				}else{
-					log('capability "' + cap + '" does not exist in capabilities');
+					log("capability \"" + cap + "\" does not exist in capabilities");
 				}
 			});
 		}
@@ -1384,20 +1392,20 @@ function getCapabilities(capabilities, provider, caps, capPresets, logger){
 	// now the presets
 	if(capPresets && capPresets.length){
 		if(!capabilities.presets){
-			log('capPreset given but no presets in capabilities');
+			log("capPreset given but no presets in capabilities");
 		}else{
 			capPresets.forEach(_preset => {
 				let preset = capabilities.presets[_preset];
 				if(!preset){
-					log('capPreset "' + _preset + '" given that does not exist in capabilites presets');
+					log("capPreset \"" + _preset + "\" given that does not exist in capabilities presets");
 				}else if(!Array.isArray(preset)){
-					log('capPreset "' + _preset + '" must be an array in capabilites presets');
+					log("capPreset \"" + _preset + "\" must be an array in capabilities presets");
 				}else{
 					preset.forEach(cap => {
 						if(capabilities[cap]){
 							result[cap] = capabilities[cap];
 						}else{
-							log('capability "' + cap + '" given in presets does not exist in capabilities');
+							log("capability \"" + cap + "\" given in presets does not exist in capabilities");
 						}
 					});
 				}
@@ -1410,7 +1418,7 @@ function getCapabilities(capabilities, provider, caps, capPresets, logger){
 			if(capabilities[cap]){
 				result[cap] = capabilities[cap];
 			}else{
-				log('capability "' + cap + '" given in presets does not exist in capabilities');
+				log("capability \"" + cap + "\" given in presets does not exist in capabilities");
 			}
 		});
 	}
@@ -1442,7 +1450,6 @@ function queueActions(action, args){
 	}else{
 		dest.push([action.id, args]);
 	}
-	console.log('queueActions:', pendingActions);
 }
 
 function getQueuedActions(){
@@ -1452,7 +1459,6 @@ function getQueuedActions(){
 		if(pendingActions.length){
 			_pendingActions = pendingActions;
 			pendingActions = [];
-			console.log('getQueuedActions:', pendingActions);
 			return true;
 		}else{
 			return false;
@@ -1469,22 +1475,26 @@ function getQueuedActions(){
 				setTimeout(check, 50);
 			}
 		})();
-	})
+	});
 }
 
 function waitForLoaderIdle(callback){
+	// eslint-disable-next-line no-undef
 	smoke.loaderIdle.then(loadError => callback(loadError));
 }
 
-function exec(testId, options, callback){
+function exec(testId, options){
+	// eslint-disable-next-line no-undef
 	return smoke.run(testId, 0, options, false, true).testUid;
 }
 
 function resetLog(){
+	// eslint-disable-next-line no-undef
 	return smoke.logger.reset();
 }
 
 function _getQueuedActions(callback){
+	// eslint-disable-next-line no-undef
 	smoke.getQueuedActions().then(instructions => callback(instructions));
 }
 
@@ -1509,28 +1519,34 @@ function executeActions(driver){
 }
 
 function doBrowser(builder, capabilityName, testList, logger, options, remoteLogs){
-	// TODO: make the URL an option
-
-
-
 	let driver;
 	return builder.build().then(_driver => {
 		driver = _driver;
-	}).then(_ => {
-		return driver.get(options.remoteUrl);
-	}).then(_ => {
+	}).then(() => {
+		let remoteUrl = options.remoteUrl;
+		if(/\?/.test(remoteUrl)){
+			// got a query string; make sure it has the remotelyControlled parameter
+			if(!/(\?|\s+)remotelyControlled(\$|\s+)/.test(remoteUrl)){
+				remoteUrl+= "&remotelyControlled";
+			}
+		}else{
+			// no query string; add one
+			remoteUrl+= "?remotelyControlled";
+		}
+		return driver.get(remoteUrl);
+	}).then(() => {
 		return driver.executeAsyncScript(waitForLoaderIdle);
 	}).then(loadingError => {
 		if(loadingError){
 			logger.log("smoke:error", 0, ["remote encountered an error loading test resources"]);
 			throw new Error("error loading test resources on remote browser");
 		}
-	}).then(_ => {
-		return driver.executeScript(resetLog)
+	}).then(() => {
+		return driver.executeScript(resetLog);
 	}).then(startupLog => {
 		startupLog.id = "startup-log";
 		remoteLogs.push(startupLog);
-	}).then(_ => {
+	}).then(() => {
 		let testList_ = testList.slice();
 		return new Promise(function(resolve, reject){
 			(function executeTestList(){
@@ -1539,13 +1555,13 @@ function doBrowser(builder, capabilityName, testList, logger, options, remoteLog
 				}else{
 					let test = testList_.shift();
 					if(test.type === testTypes.remote){
-						execute(test, logger, options, driver).then(_ => {
+						execute(test, logger, options, driver).then(() => {
 							executeTestList();
 						});
 					}else{
 						let testId = capabilityName + ":" + test.id;
 						logger.log("smoke:progress", 0, [testId + ": started"]);
-						driver.executeScript(exec, test.id, options.remoteOptions || 0).then(testUid => {
+						driver.executeScript(exec, test.id, options.remoteOptions || 0).then(testId => {
 							return executeActions(driver).then(log => {
 								log.id = testId;
 								remoteLogs.push(log);
@@ -1556,7 +1572,7 @@ function doBrowser(builder, capabilityName, testList, logger, options, remoteLog
 								logger.log("smoke:progress", 0, [msg]);
 								logger.log("smoke:remote-log", 0, [log], true);
 							});
-						}).then(_ => {
+						}).then(() => {
 							executeTestList();
 						}).catch(e => {
 							reject(e);
@@ -1565,12 +1581,12 @@ function doBrowser(builder, capabilityName, testList, logger, options, remoteLog
 				}
 			})();
 		});
-	}).then(_ => {
-		return driver.quit().then(_ => true);
+	}).then(() => {
+		return driver.quit().then(() => true);
 	}).catch(e => {
 		try{
 			logger.log("smoke:error", 0, ["remote crashed, capability aborted", e]);
-			return driver.quit().then(_ => true);
+			return driver.quit().then(() => true);
 		}catch(e){
 			logger.log("smoke:error", 0, ["webdriver crashed; it's likely the remote browser has not been shut down", e]);
 			return Promise.resolve(false);
@@ -1578,23 +1594,26 @@ function doBrowser(builder, capabilityName, testList, logger, options, remoteLog
 	}).catch(e => {
 		logger.log("smoke:error", 0, ["webdriver crashed; it's likely the remote browser has not been shut down", e]);
 		return false;
-	})
+	});
 }
 
 function runLocal(_testList, logger, options){
 	// execute each test in the testList
 	let testList = _testList.slice();
 	if(options.concurrent){
-		return Promise.all(testList.map(test => execute(test, logger, options))).then(_ => logger);
+		return Promise.all(testList.map(test => execute(test, logger, options).promise)).then(() => logger);
 	}else{
 		return new Promise((resolve) => {
 			(function finish(){
 				if(testList.length && !logger.unexpected){
-					execute(testList.shift(), logger, options).then(_ => {
+					execute(testList.shift(), logger, options).then(() => {
 						finish();
 					});
 				}else{
-					queueActions(Action.action(Action.action.testComplete, logger.getResults()));
+					if(options.remotelyControlled){
+						queueActions(Action.action(Action.action.testComplete, logger.getResults()));
+						logger.reset();
+					}
 					resolve(logger);
 				}
 			})();
@@ -1611,7 +1630,7 @@ function runRemote(testList, logger, options, capabilities){
 	//         if test.type===remote
 	//              call smoke.run, pass driver to test
 	let remoteLogs = [];
-	const {Builder} = require('selenium-webdriver');
+	const {Builder} = require("selenium-webdriver");
 
 
 	function doNextCapability(){
@@ -1625,11 +1644,11 @@ function runRemote(testList, logger, options, capabilities){
 			builder.usingServer(options.provider.url || provider.url);
 		}
 		return doBrowser(builder, capName, testList, logger, options, remoteLogs).then(
-			_ => (capabilities.length ? doNextCapability() : remoteLogs)
+			() => (capabilities.length ? doNextCapability() : remoteLogs)
 		);
 	}
 
-	return doNextCapability().then(_ => {
+	return doNextCapability().then(() => {
 		// compute the totals across all remote logs
 		let totals = {totalCount: 0, passCount: 0, failCount: 0, scaffoldFailCount: 0};
 		let keys = Object.keys(totals);
@@ -1650,15 +1669,15 @@ function run(tests, testInstruction, logger, options, remote, resetLog){
 	let testList = getTestList(testInstruction, tests, remote);
 	if(!testList.length){
 		logger.log("smoke:info", 0, ["run: no tests run", noTestsHint]);
-		return Promise.resolve(false)
+		return Promise.resolve(false);
 	}
 	let testUid = getTestUid();
 	let theRunPromise;
 	if(remote){
-		let [capabilities, capabilitiesError] = getCapabilities(options.capabilities, options.provider, options.cap, options.capPreset, logger);
+		let [capabilities] = getCapabilities(options.capabilities, options.provider, options.cap, options.capPreset, logger);
 		if(!capabilities.length){
 			logger.log("smoke:info", 0, ["run: running remote tests, but no capabilities to test"]);
-			return Promise.resolve(false)
+			return Promise.resolve(false);
 		}
 		theRunPromise = runRemote(testList, logger, options, capabilities);
 	}else{
@@ -1684,6 +1703,7 @@ function runDefault(tests, options, logger){
 		if(!options.noDefaultPrint){
 			let html = "";
 			messages.forEach(msg => {
+				// eslint-disable-next-line no-console
 				console.log(msg);
 				html += "<p>" + msg + "</p>";
 			});
@@ -1697,41 +1717,42 @@ function runDefault(tests, options, logger){
 	let remote;
 	if(isNode){
 		if(options.remote){
-			logger.log("smoke:info", 0, ['"remote" config option is true, therefore running remote tests']);
+			logger.log("smoke:info", 0, ["\"remote\" config option is true, therefore running remote tests"]);
 			remote = true;
 		}else if(options.cap && options.cap.length){
-			logger.log("smoke:info", 0, ['"cap" config option(s) given, therefore running remote tests']);
+			logger.log("smoke:info", 0, ["\"cap\" config option(s) given, therefore running remote tests"]);
 			remote = true;
 		}else if(options.capPreset && options.capPreset.length){
-			logger.log("smoke:info", 0, ['"capPreset" config option(s) given, therefore running remote tests']);
+			logger.log("smoke:info", 0, ["\"capPreset\" config option(s) given, therefore running remote tests"]);
 			remote = true;
 		}else if(tests.some(test => test.type === testTypes.node || test.type === testTypes.both)){
-			logger.log("smoke:info", 0, ['running native node tests on node']);
+			logger.log("smoke:info", 0, ["running native node tests on node"]);
 			remote = false;
 		}else if(tests.some(test => test.type !== testTypes.node)){
-			logger.log("smoke:info", 0, ['no native node tests, but browser and/or remote tests found, therefore running remote tests']);
+			logger.log("smoke:info", 0, ["no native node tests, but browser and/or remote tests found, therefore running remote tests"]);
 			remote = true;
 		}else{
-			logger.log("smoke:info", 0, ['no tests found that can run on node']);
-			return Promise.resolve(logger)
+			logger.log("smoke:info", 0, ["no tests found that can run on node"]);
+			return Promise.resolve({ranRemote: false, localLog: logger});
 		}
 	}else if(tests.some(test => test.type === testTypes.browser || test.type === testTypes.both)){
-		logger.log("smoke:info", 0, ['running browser tests']);
+		logger.log("smoke:info", 0, ["running browser tests"]);
 		remote = false;
 	}else{
-		logger.log("smoke:info", 0, ['no tests found that can run on the browser']);
-		return Promise.resolve(logger)
+		logger.log("smoke:info", 0, ["no tests found that can run on the browser"]);
+		return Promise.resolve({ranRemote: false, localLog: logger});
 	}
 
 	if(remote){
 		return run(tests, "*", logger, options, true, false).then(remoteLogs => {
 			if(remoteLogs){
+				// eslint-disable-next-line no-console
 				!options.noDefaultPrint && console.log(stringify(remoteLogs));
-				log("Cummulative Remote Results:", remoteLogs);
+				log("Cumulative Remote Results:", remoteLogs);
 				log("Local Results:", logger);
 				print();
 			}else{
-				logger.log("smoke:unexpected", 0, ['remote tests did not complete normally']);
+				logger.log("smoke:unexpected", 0, ["remote tests did not complete normally"]);
 			}
 			return {ranRemote: true, localLog: logger, remoteLogs: remoteLogs};
 		});
@@ -1747,23 +1768,23 @@ function runDefault(tests, options, logger){
 let defaultOptions = {
 	nameSeparator: "/",
 	quitOnFirstFail: false,
-	include: null,
-	logExcludes: false,
+	include: [],
+	logExcludes: true,
 	concurrent: false,
 	autoRun: true,
 	load: [],
 	provider: false,
 	cap: [],
 	capPreset: [],
-	user: {},
+	user: {}
 };
 
 // the test stack which is populated with defTest, defBrowserTest, defBrowserTestRef, defNodeTest, and defRemoteTest
-let tests = [];
+let smokeTests = [];
 
 let LoadControl = getLoadControlClass(
 	(...args) => (smoke$1.logger.log("smoke:load", 0, args)),
-	() => (tests = orderTests(tests))
+	() => (smokeTests = orderTests(smokeTests))
 );
 
 function pause(ms){
@@ -1784,17 +1805,25 @@ async function loaderIdle(){
 	return LoadControl.loadingError;
 }
 
+
 let smoke$1 = {
 	oem: "altoviso",
 	isBrowser: isBrowser,
 	isNode: isNode,
+
+	// eslint-disable-next-line no-undef
 	isAmd: isBrowser && typeof define !== "undefined" && define.amd,
 
 	options: defaultOptions,
 
-	Timer: Timer$1,
+	Timer: Timer,
 	Logger: Logger,
 	logger: new Logger(defaultOptions),
+
+	get tests(){
+		// give access to the test objects, but not our array so we can maintain order
+		return smokeTests.map(_ => _);
+	},
 
 	resetAssertCount: resetAssertCount,
 	getAssertCount: getAssertCount,
@@ -1872,8 +1901,11 @@ let smoke$1 = {
 		let options = Array.isArray(argsOrOptions) ? smoke$1.argsToOptions(argsOrOptions) : argsOrOptions;
 		dest = dest || smoke$1.options;
 		smoke$1.processOptions(options, dest);
-		if(dest === smoke$1.options && smoke$1.options.remotelyControlled){
-			delete smoke$1.options.concurrent;
+		if(dest === smoke$1.options){
+			if(smoke$1.options.remotelyControlled){
+				delete smoke$1.options.concurrent;
+			}
+			smoke$1.logger.updateOptions(dest);
 		}
 		(dest.load || []).slice().forEach(resource => {
 			if(/\.css/i.test(resource)){
@@ -1887,6 +1919,7 @@ let smoke$1 = {
 				smoke$1.injectScript(resource);
 			}
 		});
+
 		return smoke$1.loadingPromise;
 	},
 
@@ -1897,41 +1930,43 @@ let smoke$1 = {
 		for(const control of LoadControl.injections.values()){
 			options.load.push(
 				control.resourceName + ":" +
-				(control.status === false ? "failed" : (control.status === true ? "loaded" : "in-progress"))
+				(control.status === false ? "failed" : (control.status === true ? "loaded" : control.status))
 			);
 		}
+		options.tests = smoke$1.tests.map(test => test.id);
+		// eslint-disable-next-line no-console
 		console.log(isNode ? smoke$1.stringify(options) : options);
 	},
 
 	defTest(...args){
 		// add a test definition that works on both the browser and node
-		defTest(testTypes.both, smoke$1.logger, tests, ...args);
+		defTest(testTypes.both, smoke$1.logger, smokeTests, ...args);
 	},
 
 	defBrowserTest(...args){
-		defTest(testTypes.browser, smoke$1.logger, tests, ...args);
+		defTest(testTypes.browser, smoke$1.logger, smokeTests, ...args);
 	},
 
 	defBrowserTestRef(...args){
-		// test node runs about tests that can be run remotely without having to load those tests locally
-		// this is important because some tests use JS6 import/export which node cannot parse
+		// define test ids that can be run remotely without having to load those tests locally
+		// this is important because some tests use JS6 import/export which node cannot consume
 		args.forEach(test => {
 			if(typeof test !== "string"){
 				smoke$1.logger.log("smoke:bad-test-spec", 0, ["arguments to defBrowserTestRef must be strings"]);
 			}else{
-				defTest(testTypes.browser, smoke$1.logger, tests, {id: test, test: _ => _});
+				defTest(testTypes.browser, smoke$1.logger, smokeTests, {id: test, test: _ => _});
 			}
 		});
 	},
 
 	defNodeTest(...args){
 		// add a test definition that can _only_ run in node
-		defTest(testTypes.node, smoke$1.logger, tests, ...args);
+		defTest(testTypes.node, smoke$1.logger, smokeTests, ...args);
 	},
 
 	defRemoteTest(...args){
 		// add a test definition controls a remote browser
-		defTest(remote, smoke$1.logger, tests, ...args);
+		defTest(testTypes.remote, smoke$1.logger, smokeTests, ...args);
 	},
 
 	queueActions: queueActions,
@@ -1940,7 +1975,7 @@ let smoke$1 = {
 	run(testInstruction, logger, options, remote, resetLog){
 		// autoRun is canceled after the first run (prevents running twice when user configs call runDefault explicitly)
 		smoke$1.options.autoRun = false;
-		return run(tests, testInstruction, logger || options.logger || smoke$1.logger, options || smoke$1.options, remote, resetLog);
+		return run(smokeTests, testInstruction, logger || options.logger || smoke$1.logger, options || smoke$1.options, remote, resetLog);
 
 	},
 
@@ -1952,7 +1987,7 @@ let smoke$1 = {
 			return Promise.resolve(smoke$1.logger);
 		}else{
 			smoke$1.options.autoRun = false;
-			return runDefault(tests, smoke$1.options, smoke$1.options.logger || smoke$1.logger)
+			return runDefault(smokeTests, smoke$1.options, smoke$1.options.logger || smoke$1.logger);
 		}
 	}
 
@@ -1971,7 +2006,7 @@ async function defaultStart(){
 		if(/\/node_modules\/bd-smoke\/browser-runner\.html$/.test(window.location.pathname)){
 			LoadControl.injectRelativePrefix = options.root = "../../";
 		}else{
-			smoke$1.logger.log("smoke:info", 0, ['smoke not being run by the default runner; therefore no idea how to set root; suggest you set it explicitly']);
+			smoke$1.logger.log("smoke:info", 0, ["smoke not being run by the default runner; therefore no idea how to set root; suggest you set it explicitly"]);
 		}
 	}else{
 		LoadControl.injectRelativePrefix = options.root = process.cwd() + "/";
@@ -1990,15 +2025,15 @@ async function defaultStart(){
 		if(!smoke$1.loadingError && smoke$1.options.autoRun && !smoke$1.options.remotelyControlled){
 			let result = await smoke$1.runDefault();
 			if(smoke$1.options.checkConfig){
-				smoke$1.logger.log("smoke:info", "exitCode", ['only printed configuration, no tests ran', 0]);
+				smoke$1.logger.log("smoke:exitCode", 0, ["only printed configuration, no tests ran", 0]);
 				isNode && process.exit(0);
 			}else if(result.ranRemote){
 				let exitCode = result.remoteLogs.failCount + result.remoteLogs.scaffoldFailCount + result.localLog.failCount + result.localLog.scaffoldFailCount;
-				smoke$1.logger.log("smoke:info", "exitCode", ['default tests run on remote browser(s) completed; exiting process', exitCode]);
+				smoke$1.logger.log("smoke:exitCode", 0, ["default tests run on remote browser(s) completed", exitCode]);
 				isNode && process.exit(exitCode);
 			}else{
 				let exitCode = result.localLog.failCount + result.localLog.scaffoldFailCount;
-				smoke$1.logger.log("smoke:info", "exitCode", ['default tests run locally on node completed; exiting process', exitCode]);
+				smoke$1.logger.log("smoke:exitCode", 0, ["default tests run locally completed", exitCode]);
 				isNode && process.exit(exitCode);
 			}
 		}

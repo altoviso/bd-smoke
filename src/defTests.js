@@ -1,4 +1,4 @@
-import {isBrowser, isNode} from "./environment.js";
+import {isNode} from "./environment.js";
 import testTypes from "./testTypes.js";
 
 function checkTest(test, logger){
@@ -41,7 +41,7 @@ function checkTest(test, logger){
 		if(node.test){
 			if(typeof node.test === "function"){
 				result.test = node.test;
-			}else if(note.test instanceof Object){
+			}else if(node.test instanceof Object){
 				result.test = traverse(node.test);
 			}else{
 				logError(node, "test must be either a test object or a function");
@@ -68,7 +68,7 @@ function checkTest(test, logger){
 					logError(node, "[" + i + "]don't know what test is; should be a [id, test (a function)] pair, a test (a function) or a test object (an object)");
 				}
 				return result;
-			})
+			});
 		}
 		context.pop();
 		return result;
@@ -88,7 +88,7 @@ function defTest(type, logger, tests, ...args){
 		if(!error){
 			if(type === testTypes.browser && isNode){
 				// never going to run this test here, simplify it for use as a reference to a test that may be run remotely
-				test = {id: test.id, test: _ => _, type: testTypes.browser}
+				test = {id: test.id, test: _ => _, type: testTypes.browser};
 			}
 			if(isNode || type === testTypes.both || type === testTypes.browser){
 				test.type = type;

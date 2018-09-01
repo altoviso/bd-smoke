@@ -1,4 +1,5 @@
-import {isBrowser, isNode} from "./environment.js";
+/* eslint-disable no-console */
+import {isNode} from "./environment.js";
 import Timer from "./Timer.js";
 
 const Logger = class {
@@ -28,7 +29,7 @@ const Logger = class {
 	}
 
 	getResults(){
-		let result = {
+		return {
 			unexpected: this._unexpected,
 			totalCount: this._totalCount,
 			passCount: this._passCount,
@@ -37,7 +38,6 @@ const Logger = class {
 			results: this._results,
 			logs: this._logs
 		};
-		return result;
 	}
 
 	get totalCount(){
@@ -61,11 +61,11 @@ const Logger = class {
 	}
 
 	get results(){
-		return this._results
+		return this._results;
 	}
 
 	get logs(){
-		return this._logs
+		return this._logs;
 	}
 
 	getLog(id){

@@ -55,6 +55,8 @@ let smoke = {
 	oem: "altoviso",
 	isBrowser: isBrowser,
 	isNode: isNode,
+
+	// eslint-disable-next-line no-undef
 	isAmd: isBrowser && typeof define !== "undefined" && define.amd,
 
 	options: defaultOptions,
@@ -152,14 +154,14 @@ let smoke = {
 		}
 		(dest.load || []).slice().forEach(resource => {
 			if(/\.css/i.test(resource)){
-				smoke.injectCss(resource)
+				smoke.injectCss(resource);
 			}else if(smoke.isAmd && !/\.[^./]+$/.test(resource)){
 				// assume resource is an AMD module if an AMD loader is present and resource does not have a file type
-				smoke.loadAmdModule(resource)
+				smoke.loadAmdModule(resource);
 			}else if(isNode){
-				smoke.loadNodeModule(resource)
+				smoke.loadNodeModule(resource);
 			}else{
-				smoke.injectScript(resource)
+				smoke.injectScript(resource);
 			}
 		});
 
@@ -174,19 +176,20 @@ let smoke = {
 			options.load.push(
 				control.resourceName + ":" +
 				(control.status === false ? "failed" : (control.status === true ? "loaded" : control.status))
-			)
+			);
 		}
 		options.tests = smoke.tests.map(test => test.id);
+		// eslint-disable-next-line no-console
 		console.log(isNode ? smoke.stringify(options) : options);
 	},
 
 	defTest(...args){
 		// add a test definition that works on both the browser and node
-		defTest(testTypes.both, smoke.logger, smokeTests, ...args)
+		defTest(testTypes.both, smoke.logger, smokeTests, ...args);
 	},
 
 	defBrowserTest(...args){
-		defTest(testTypes.browser, smoke.logger, smokeTests, ...args)
+		defTest(testTypes.browser, smoke.logger, smokeTests, ...args);
 	},
 
 	defBrowserTestRef(...args){
@@ -196,19 +199,19 @@ let smoke = {
 			if(typeof test !== "string"){
 				smoke.logger.log("smoke:bad-test-spec", 0, ["arguments to defBrowserTestRef must be strings"]);
 			}else{
-				defTest(testTypes.browser, smoke.logger, smokeTests, {id: test, test: _ => _})
+				defTest(testTypes.browser, smoke.logger, smokeTests, {id: test, test: _ => _});
 			}
 		});
 	},
 
 	defNodeTest(...args){
 		// add a test definition that can _only_ run in node
-		defTest(testTypes.node, smoke.logger, smokeTests, ...args)
+		defTest(testTypes.node, smoke.logger, smokeTests, ...args);
 	},
 
 	defRemoteTest(...args){
 		// add a test definition controls a remote browser
-		defTest(remote, smoke.logger, smokeTests, ...args)
+		defTest(testTypes.remote, smoke.logger, smokeTests, ...args);
 	},
 
 	queueActions: queueActions,
@@ -229,7 +232,7 @@ let smoke = {
 			return Promise.resolve(smoke.logger);
 		}else{
 			smoke.options.autoRun = false;
-			return runDefault(smokeTests, smoke.options, smoke.options.logger || smoke.logger)
+			return runDefault(smokeTests, smoke.options, smoke.options.logger || smoke.logger);
 		}
 	}
 
@@ -246,9 +249,9 @@ async function defaultStart(){
 		LoadControl.injectRelativePrefix = /\/$/.test(root) ? root : root + "/";
 	}else if(isBrowser){
 		if(/\/node_modules\/bd-smoke\/browser-runner\.html$/.test(window.location.pathname)){
-			LoadControl.injectRelativePrefix = options.root = "../../"
+			LoadControl.injectRelativePrefix = options.root = "../../";
 		}else{
-			smoke.logger.log("smoke:info", 0, ['smoke not being run by the default runner; therefore no idea how to set root; suggest you set it explicitly']);
+			smoke.logger.log("smoke:info", 0, ["smoke not being run by the default runner; therefore no idea how to set root; suggest you set it explicitly"]);
 		}
 	}else{
 		LoadControl.injectRelativePrefix = options.root = process.cwd() + "/";
@@ -267,15 +270,15 @@ async function defaultStart(){
 		if(!smoke.loadingError && smoke.options.autoRun && !smoke.options.remotelyControlled){
 			let result = await smoke.runDefault();
 			if(smoke.options.checkConfig){
-				smoke.logger.log("smoke:exitCode", 0, ['only printed configuration, no tests ran', 0]);
+				smoke.logger.log("smoke:exitCode", 0, ["only printed configuration, no tests ran", 0]);
 				isNode && process.exit(0);
 			}else if(result.ranRemote){
 				let exitCode = result.remoteLogs.failCount + result.remoteLogs.scaffoldFailCount + result.localLog.failCount + result.localLog.scaffoldFailCount;
-				smoke.logger.log("smoke:exitCode", 0, ['default tests run on remote browser(s) completed', exitCode]);
+				smoke.logger.log("smoke:exitCode", 0, ["default tests run on remote browser(s) completed", exitCode]);
 				isNode && process.exit(exitCode);
 			}else{
 				let exitCode = result.localLog.failCount + result.localLog.scaffoldFailCount;
-				smoke.logger.log("smoke:exitCode", 0, ['default tests run locally completed', exitCode]);
+				smoke.logger.log("smoke:exitCode", 0, ["default tests run locally completed", exitCode]);
 				isNode && process.exit(exitCode);
 			}
 		}
