@@ -1,6 +1,5 @@
 
 function rollup(){
-	console.log(__dirname);
 	let cp = require('child_process');
 	cp.execSync('node node_modules/rollup/bin/rollup -c', {cwd:__dirname}, (error, stdout, stderr) => {
 		if (error) {
