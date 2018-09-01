@@ -13,23 +13,23 @@ import {queueActions, getQueuedActions, run, runDefault, getCapabilities} from "
 let defaultOptions = {
 	nameSeparator: "/",
 	quitOnFirstFail: false,
-	include: null,
-	logExcludes: false,
+	include: [],
+	logExcludes: true,
 	concurrent: false,
 	autoRun: true,
 	load: [],
 	provider: false,
 	cap: [],
 	capPreset: [],
-	user: {},
+	user: {}
 };
 
 // the test stack which is populated with defTest, defBrowserTest, defBrowserTestRef, defNodeTest, and defRemoteTest
-let tests = [];
+let smokeTests = [];
 
 let LoadControl = getLoadControlClass(
 	(...args) => (smoke.logger.log("smoke:load", 0, args)),
-	() => (tests = orderTests(tests))
+	() => (smokeTests = orderTests(smokeTests))
 );
 
 function pause(ms){
@@ -50,6 +50,7 @@ async function loaderIdle(){
 	return LoadControl.loadingError;
 }
 
+
 let smoke = {
 	oem: "altoviso",
 	isBrowser: isBrowser,
@@ -61,6 +62,11 @@ let smoke = {
 	Timer: Timer,
 	Logger: Logger,
 	logger: new Logger(defaultOptions),
+
+	get tests(){
+		// give access to the test objects, but not our array so we can maintain order
+		return smokeTests.map(_ => _);
+	},
 
 	resetAssertCount: resetAssertCount,
 	getAssertCount: getAssertCount,
@@ -138,8 +144,11 @@ let smoke = {
 		let options = Array.isArray(argsOrOptions) ? smoke.argsToOptions(argsOrOptions) : argsOrOptions;
 		dest = dest || smoke.options;
 		smoke.processOptions(options, dest);
-		if(dest === smoke.options && smoke.options.remotelyControlled){
-			delete smoke.options.concurrent;
+		if(dest === smoke.options){
+			if(smoke.options.remotelyControlled){
+				delete smoke.options.concurrent;
+			}
+			smoke.logger.updateOptions(dest);
 		}
 		(dest.load || []).slice().forEach(resource => {
 			if(/\.css/i.test(resource)){
@@ -153,6 +162,7 @@ let smoke = {
 				smoke.injectScript(resource)
 			}
 		});
+
 		return smoke.loadingPromise;
 	},
 
@@ -163,41 +173,42 @@ let smoke = {
 		for(const control of LoadControl.injections.values()){
 			options.load.push(
 				control.resourceName + ":" +
-				(control.status === false ? "failed" : (control.status === true ? "loaded" : "in-progress"))
+				(control.status === false ? "failed" : (control.status === true ? "loaded" : control.status))
 			)
 		}
+		options.tests = smoke.tests.map(test => test.id);
 		console.log(isNode ? smoke.stringify(options) : options);
 	},
 
 	defTest(...args){
 		// add a test definition that works on both the browser and node
-		defTest(testTypes.both, smoke.logger, tests, ...args)
+		defTest(testTypes.both, smoke.logger, smokeTests, ...args)
 	},
 
 	defBrowserTest(...args){
-		defTest(testTypes.browser, smoke.logger, tests, ...args)
+		defTest(testTypes.browser, smoke.logger, smokeTests, ...args)
 	},
 
 	defBrowserTestRef(...args){
-		// test node runs about tests that can be run remotely without having to load those tests locally
-		// this is important because some tests use JS6 import/export which node cannot parse
+		// define test ids that can be run remotely without having to load those tests locally
+		// this is important because some tests use JS6 import/export which node cannot consume
 		args.forEach(test => {
 			if(typeof test !== "string"){
 				smoke.logger.log("smoke:bad-test-spec", 0, ["arguments to defBrowserTestRef must be strings"]);
 			}else{
-				defTest(testTypes.browser, smoke.logger, tests, {id: test, test: _ => _})
+				defTest(testTypes.browser, smoke.logger, smokeTests, {id: test, test: _ => _})
 			}
 		});
 	},
 
 	defNodeTest(...args){
 		// add a test definition that can _only_ run in node
-		defTest(testTypes.node, smoke.logger, tests, ...args)
+		defTest(testTypes.node, smoke.logger, smokeTests, ...args)
 	},
 
 	defRemoteTest(...args){
 		// add a test definition controls a remote browser
-		defTest(remote, smoke.logger, tests, ...args)
+		defTest(remote, smoke.logger, smokeTests, ...args)
 	},
 
 	queueActions: queueActions,
@@ -206,7 +217,7 @@ let smoke = {
 	run(testInstruction, logger, options, remote, resetLog){
 		// autoRun is canceled after the first run (prevents running twice when user configs call runDefault explicitly)
 		smoke.options.autoRun = false;
-		return run(tests, testInstruction, logger || options.logger || smoke.logger, options || smoke.options, remote, resetLog);
+		return run(smokeTests, testInstruction, logger || options.logger || smoke.logger, options || smoke.options, remote, resetLog);
 
 	},
 
@@ -218,7 +229,7 @@ let smoke = {
 			return Promise.resolve(smoke.logger);
 		}else{
 			smoke.options.autoRun = false;
-			return runDefault(tests, smoke.options, smoke.options.logger || smoke.logger)
+			return runDefault(smokeTests, smoke.options, smoke.options.logger || smoke.logger)
 		}
 	}
 
@@ -256,15 +267,15 @@ async function defaultStart(){
 		if(!smoke.loadingError && smoke.options.autoRun && !smoke.options.remotelyControlled){
 			let result = await smoke.runDefault();
 			if(smoke.options.checkConfig){
-				smoke.logger.log("smoke:info", "exitCode", ['only printed configuration, no tests ran', 0]);
+				smoke.logger.log("smoke:exitCode", 0, ['only printed configuration, no tests ran', 0]);
 				isNode && process.exit(0);
 			}else if(result.ranRemote){
 				let exitCode = result.remoteLogs.failCount + result.remoteLogs.scaffoldFailCount + result.localLog.failCount + result.localLog.scaffoldFailCount;
-				smoke.logger.log("smoke:info", "exitCode", ['default tests run on remote browser(s) completed; exiting process', exitCode]);
+				smoke.logger.log("smoke:exitCode", 0, ['default tests run on remote browser(s) completed', exitCode]);
 				isNode && process.exit(exitCode);
 			}else{
 				let exitCode = result.localLog.failCount + result.localLog.scaffoldFailCount;
-				smoke.logger.log("smoke:info", "exitCode", ['default tests run locally on node completed; exiting process', exitCode]);
+				smoke.logger.log("smoke:exitCode", 0, ['default tests run locally completed', exitCode]);
 				isNode && process.exit(exitCode);
 			}
 		}
