@@ -80,7 +80,7 @@ export default function getLoadControlClass(log, onLoadingComplete){
 				let control;
 				if(type === "CSS" && isNode){
 					control = new LoadControl(resourceName, "ignored", true, "CSS resources are ignored when running on node");
-				}else if(/.+\.js6$/.test(resourceName) && isNode){
+				}else if(/.+\.es6\.js$/.test(resourceName) && isNode){
 					// .js6 types indicate the resource may include import or export directives
 					// what about when node does support import/export ?
 					control = new LoadControl(resourceName, "ignored", true, "js6 resources are ignored when running on node");
