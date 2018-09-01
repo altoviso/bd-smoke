@@ -165,9 +165,10 @@ export default function getLoadControlClass(log, onLoadingComplete){
 		}
 
 		static loadNodeModule(moduleName){
-			let loadPromise = LoadControl.load(moduleName, "node module", function(control, fileName){
+			return LoadControl.load(moduleName, "node module", function(control, fileName){
 				try{
-					control.resolve(require((control.loadedName = fileName)));
+					require((control.loadedName = fileName));
+					control.resolve(true);
 				}catch(e){
 					control.resolve(false, e);
 				}
@@ -178,7 +179,7 @@ export default function getLoadControlClass(log, onLoadingComplete){
 			return LoadControl.load(resourceName, "script", function(control, module){
 				try{
 					require([module], function(result){
-						control.resolve(result);
+						control.resolve(true);
 					});
 				}catch(e){
 					control.resolve(false, e);
