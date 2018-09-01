@@ -28,5 +28,17 @@ module.exports = {
             "error",
             "always"
         ]
-    }
+    },
+	"overrides": [
+		{
+			"files": ["smoke.js"],
+			"rules": {
+				"quotes": "off",
+				"indent": "off"
+			},
+			"globals": {
+				"define": true
+			}
+		}
+	]
 };
