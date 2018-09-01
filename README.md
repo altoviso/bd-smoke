@@ -33,6 +33,8 @@
 
 ## Installation
 
+Note: master is under dev; if you want a working version, use npm.
+
 With `npm`:
 
 ```

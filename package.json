@@ -1,32 +1,40 @@
 {
-  "name": "bd-smoke",
-  "version": "0.3.3",
-  "description": "Simple, powerful javascript test framework for node.js and the browser with NO dependencies.",
-  "homepage": "http://github.com/altoviso/bd-smoke",
-  "bugs": "http://github.com/altoviso/bd-smoke/issues",
-  "main": "./smoke.js",
-  "directories": {
-    "test": "test"
-  },
-  "dependencies": {},
-  "devDependencies": {},
-  "scripts": {
-    "test": "node node-runner.js -p=./test/release.js"
-  },
-  "github": "http://github.com/altoviso/bd-smoke",
-  "repository": {
-    "type": "git",
-    "url": "git://github.com/altoviso/bd-smoke.git"
-  },
-  "keywords": [
-    "test harness",
-    "test",
-    "tester",
-    "unit test",
-    "unit testing",
-    "system test",
-    "system testing"
-  ],
-  "author": "Rawld Gill <rgill@altoviso.com> (http://altoviso.com/)",
-  "license": "BSD-3-Clause"
+	"name": "bd-smoke",
+	"version": "0.3.3",
+	"description": "Simple, powerful javascript test framework for node.js and the browser with NO dependencies.",
+	"homepage": "http://github.com/altoviso/bd-smoke",
+	"bugs": "http://github.com/altoviso/bd-smoke/issues",
+	"main": "./smoke.js",
+	"directories": {
+		"test": "test"
+	},
+	"dependencies": {
+		"selenium-webdriver": "^4.0.0-alpha.1"
+	},
+	"devDependencies": {
+		"grunt": "^1.0.3",
+		"grunt-cli": "^1.2.0",
+		"grunt-contrib-watch": "^1.1.0",
+		"rollup": "^0.65.0"
+	},
+	"scripts": {
+		"test": "node smoke",
+		"build": "./node_modules/.bin/rollup -c"
+	},
+	"github": "http://github.com/altoviso/bd-smoke",
+	"repository": {
+		"type": "git",
+		"url": "git://github.com/altoviso/bd-smoke.git"
+	},
+	"keywords": [
+		"test harness",
+		"test",
+		"tester",
+		"unit test",
+		"unit testing",
+		"system test",
+		"system testing"
+	],
+	"author": "Rawld Gill <rgill@altoviso.com> (http://altoviso.com/)",
+	"license": "BSD-3-Clause"
 }

