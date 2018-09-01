@@ -15,6 +15,8 @@
 			'./test/traverse-example.js'
 		],
 
+		remoteUrl:'http://localhost:8080/altoviso/bd-smoke/browser-runner.html?remotelyControlled&root=./',
+
 		capabilities: smoke.isNode ? require('./test/capabilities') : [],
 	};
 	smoke.configure(config);
