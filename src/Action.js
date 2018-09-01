@@ -84,7 +84,7 @@ Action.add("click", (driver, action, scratch, id) => {
 	action.click(driver.findElement({id: id}))
 });
 
-Action.action.keys = {
+let KEYS = Action.action.keys = {
 	null: '\uE000',
 	cancel: '\uE001',
 	help: '\uE002',
