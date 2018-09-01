@@ -134,7 +134,6 @@ function queueActions(action, args){
 	}else{
 		dest.push([action.id, args])
 	}
-	console.log('queueActions:', pendingActions);
 }
 
 function getQueuedActions(){
@@ -286,7 +285,10 @@ function runLocal(_testList, logger, options){
 						finish();
 					});
 				}else{
-					queueActions(Action.action(Action.action.testComplete, logger.getResults()));
+					if(options.remotelyControlled){
+						queueActions(Action.action(Action.action.testComplete, logger.getResults()));
+						logger.reset();
+					}
 					resolve(logger);
 				}
 			})();
@@ -405,14 +407,14 @@ function runDefault(tests, options, logger){
 			remote = true;
 		}else{
 			logger.log("smoke:info", 0, ['no tests found that can run on node']);
-			return Promise.resolve(logger)
+			return Promise.resolve({ranRemote: false, localLog: logger})
 		}
 	}else if(tests.some(test => test.type === testTypes.browser || test.type === testTypes.both)){
 		logger.log("smoke:info", 0, ['running browser tests']);
 		remote = false;
 	}else{
-		logger.log("smoke:info", 0, ['no tests found that can run on the browser'])
-		return Promise.resolve(logger)
+		logger.log("smoke:info", 0, ['no tests found that can run on the browser']);
+		return Promise.resolve({ranRemote: false, localLog: logger})
 	}
 
 	if(remote){

@@ -22,6 +22,11 @@ const Logger = class {
 		return result;
 	}
 
+	updateOptions(options){
+		this.options = Object.assign({}, this.options, options);
+		this._console = !!this.options.console;
+	}
+
 	getResults(){
 		let result = {
 			unexpected: this._unexpected,
