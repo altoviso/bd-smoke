@@ -158,7 +158,7 @@ let smoke = {
 
 	checkConfig(options){
 		options = Object.assign({}, options || smoke.options);
-		options.capabilities = getCapabilities(options.capabilities, options.cap, options.capPreset, smoke.logger)[0];
+		options.capabilities = getCapabilities(options.capabilities, options.provider, options.cap, options.capPreset, smoke.logger)[0];
 		options.load = [];
 		for(const control of LoadControl.injections.values()){
 			options.load.push(
