@@ -8,9 +8,7 @@
 	"directories": {
 		"test": "test"
 	},
-	"dependencies": {
-		"selenium-webdriver": "^4.0.0-alpha.1"
-	},
+	"dependencies": {},
 	"devDependencies": {
 		"grunt": "^1.0.3",
 		"grunt-cli": "^1.2.0",
