@@ -44,6 +44,7 @@ function getTestTree(test, logger, include){
 			// included can ONLY be true or EXACT at this point
 			node.before && (result.before = node.before);
 			node.after && (result.after = node.after);
+			node.finally && (result.finally = node.finally);
 			node.beforeEach && (result.beforeEach = node.beforeEach);
 			node.afterEach && (result.afterEach = node.afterEach);
 			if(node.test){
@@ -82,20 +83,23 @@ const
 	TEST = Symbol('test'),
 	AFTER_EACH = Symbol('afterEach'),
 	AFTER = Symbol('after'),
+	FINALLY = Symbol('finally'),
 	EXCLUDED = Symbol("excluded"),
 	EXACT = Symbol("smoke-prepareTest-exact"),
 	phaseToMethodName = {
 		[BEFORE]: "before",
 		[BEFORE_EACH]: "beforeEach",
 		[AFTER_EACH]: "afterEach",
-		[AFTER]: "after"
+		[AFTER]: "after",
+			[FINALLY]: "finally"
 	},
 	phaseToText = {
 		[BEFORE]: "before",
 		[BEFORE_EACH]: "before-each",
 		[TEST]: "test",
 		[AFTER_EACH]: "after-each",
-		[AFTER]: "after"
+		[AFTER]: "after",
+		[FINALLY]: "finally"
 	};
 
 function execute(test, logger, options, driver){
@@ -122,6 +126,9 @@ function execute(test, logger, options, driver){
 			if(node.after && node.executed && !node.abort){
 				yield [AFTER, context, node]
 			}
+			if(node.finally){
+				yield [FINALLY, context, node]
+			}
 		}else if(node.tests){
 			let atLeastOneExecuted = false;
 			for(const test of node.tests){
@@ -139,6 +146,9 @@ function execute(test, logger, options, driver){
 			}
 			if(node.after && atLeastOneExecuted && !node.abort){
 				yield [AFTER, context, node]
+			}
+			if(node.finally){
+				yield [FINALLY, context, node]
 			}
 		}else if(node.test !== EXCLUDED){
 			for(const n of context){
@@ -160,6 +170,9 @@ function execute(test, logger, options, driver){
 			}
 			if(node.after && !node.abort){
 				yield [AFTER, context, node]
+			}
+			if(node.finally){
+				yield [FINALLY, context, node]
 			}
 		}else{ // node.test===EXCLUDED
 			logger.excludeTest(context);

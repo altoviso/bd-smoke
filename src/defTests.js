@@ -23,7 +23,7 @@ function checkTest(test, logger){
 		if(typeof node.id !== "string" || !node.id){
 			logError("each test must have a non-empty identifier");
 		}
-		["before", "beforeEach", "after", "afterEach"].forEach(name => {
+		["before", "beforeEach", "after", "afterEach", "finally"].forEach(name => {
 			if(node[name]){
 				if(typeof node[name] !== "function"){
 					logError("scaffold " + name + " must be a function");
