@@ -22,7 +22,7 @@ function getTestTree(test, logger, include){
 	// matchedPaths = [0, 1]..that is, path[0] matches to level 0, path[1] matches to level 1
 	let matchedPaths = include && include.map(_ => -1);
 
-	function calcIncluded(checkInclude, id, level){
+	function calcIncluded(id, level){
 		let result = false;
 		let prevLevel = level - 1;
 		let nextLevel = level + 1;
@@ -36,11 +36,12 @@ function getTestTree(test, logger, include){
 	}
 
 	function traverse(node, level, parent, checkIncluded){
-		let included = !checkIncluded || calcIncluded(checkInclude, node.id, level);
+		let included = !checkIncluded || calcIncluded(node.id, level);
 		let result = {id: node.id, parent: parent};
 		if(!included){
 			result.test = EXCLUDED;
 		}else{
+			// included can ONLY be true or EXACT at this point
 			node.before && (result.before = node.before);
 			node.after && (result.after = node.after);
 			node.beforeEach && (result.beforeEach = node.beforeEach);
@@ -50,20 +51,13 @@ function getTestTree(test, logger, include){
 					// if not to the end of the include path, exclude this test
 					result.test = !checkIncluded || included === EXACT ? node.test : EXCLUDED;
 				}else{
-					// if included===EXACT, then no reason to keep checking for include
-					result.test = traverse(node.test, level + 1, checkIncluded && included !== EXACT)
+					//included can only be true or EXACT; if it's exact, then stop checking
+					result.test = traverse(node.test, level + 1, result, checkIncluded && included !== EXACT)
 				}
 			}else{
 				result.tests = node.tests.map((test, i) => {
-					if(typeof test === "function"){
-						// implied testId of the index
-						return traverse({id: i, test: test}, level + 1, result, checkIncluded)
-					}else if(Array.isArray(test)){
-						// [id, test]
-						returntraverse({id: test[0], test: test[1]}, level + 1, result, checkIncluded)
-					}else{
-						return traverse(test, level + 1, result, checkIncluded)
-					}
+					//included can only be true or EXACT; if it's exact, then stop checking
+					return traverse(test, level + 1, result, checkIncluded && included !== EXACT)
 				})
 			}
 		}
@@ -75,7 +69,7 @@ function getTestTree(test, logger, include){
 	}
 
 	try{
-		return [traverse(test, 0, !!include), false]
+		return [traverse(test, 0, null, !!include), false]
 	}catch(e){
 		logger.log("smoke:unexpected", test.id, ["failed to filter tests for includes", e]);
 		return [{id: test.id, test: EXCLUDED}, true];
