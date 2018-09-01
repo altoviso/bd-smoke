@@ -31,7 +31,7 @@ function argsToOptions(args, _normalizeOptionName){
 	// for any value of the form "<value>" or '<value>', remove the surrounding quotes
 	// make sure everything is trimmed up
 
-	let normalizeName = _normalizeOptionName ? (name)= (normalizeOptionName(_normalizeOptionName(name))) : normalizeOptionName;
+	let normalizeName = _normalizeOptionName ? (name) => (normalizeOptionName(_normalizeOptionName(name))) : normalizeOptionName;
 
 	let options = {};
 	args.forEach(arg => {
@@ -45,14 +45,14 @@ function argsToOptions(args, _normalizeOptionName){
 				if(!Array.isArray(options[name])){
 					options[name] = [options[name], value];
 				}else{
-					options[name].push(value)
+					options[name].push(value);
 				}
 			}else{
 				options[name] = value;
 			}
 		}else if(arg){
 			arg = normalizeName(arg);
-			if(/^\!(.+)/.test(arg)){
+			if(/^!(.+)/.test(arg)){
 				options[arg.substring(1)] = false;
 			}else{
 				options[arg] = true;
@@ -68,17 +68,16 @@ function processOptions(options, dest){
 	// toArray also filters out falsey values
 	let toArray = (src) => (Array.isArray(src) ? src : [src]).filter(_ => _);
 	let processInclude = (dest, value) => {
-		value.split(/\;|\,/).forEach(item => {
-			item = item.split(/\.|\//).map(x => x.trim()).filter(x => !!x);
+		value.split(/[;,]/).forEach(item => {
+			item = item.split(/[./]/).map(x => x.trim()).filter(x => !!x);
 			item.length && dest.push(item);
 		});
 		return dest;
 	};
 	let processCommaList = (dest, src) => {
-		return dest.concat(src.split(/\,\;/).map(s => s.trim()).filter(s => !!s));
+		return dest.concat(src.split(/[,;]/).map(s => s.trim()).filter(s => !!s));
 	};
 
-	let packageConfig = [];
 	Object.keys(options).forEach(name => {
 		let value = options[name];
 		switch(name){
@@ -88,10 +87,10 @@ function processOptions(options, dest){
 				break;
 			case "package":
 				toArray(value).forEach(value => {
-					value.split(/\,\;/).map(s => s.trim()).filter(s => !!s).forEach(p => {
+					value.split(/[,;]/).map(s => s.trim()).filter(s => !!s).forEach(p => {
 						let split = p.split(":").map(item => item.trim());
 						require.config({packages: [{name: split[0], location: split[1], main: split[2]}]});
-					})
+					});
 				});
 				break;
 			case "load":
