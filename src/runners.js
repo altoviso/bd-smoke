@@ -200,15 +200,22 @@ function executeActions(driver){
 }
 
 function doBrowser(builder, capabilityName, testList, logger, options, remoteLogs){
-	// TODO: make the URL an option
-
-
-
 	let driver;
 	return builder.build().then(_driver => {
 		driver = _driver;
+
 	}).then(_ => {
-		return driver.get(options.remoteUrl);
+		let remoteUrl = options.remoteUrl;
+		if(/\?/.test(remoteUrl)){
+			// got a query string; make sure it has the remotelyControlled parameter
+			if(!/(\?|\s+)remotelyControlled(\$|\s+)/.test(remoteUrl)){
+				remoteUrl+= "&remotelyControlled";
+			}
+		}else{
+			// no query string; add one
+			remoteUrl+= "?remotelyControlled";
+		}
+		return driver.get(remoteUrl);
 	}).then(_ => {
 		return driver.executeAsyncScript(waitForLoaderIdle);
 	}).then(loadingError => {
