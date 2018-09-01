@@ -202,14 +202,14 @@ function executeActions(driver){
 
 function doBrowser(builder, capabilityName, testList, logger, options, remoteLogs){
 	// TODO: make the URL an option
-	//let URL = 'http://localhost:3002/node_modules/bd-smoke/browser-runner.html?remotelyControlled';
-	let URL = 'http://localhost:8080/altoviso/bd-smoke/browser-runner.html?remotelyControlled&root=./';
+
+
 
 	let driver;
 	return builder.build().then(_driver => {
 		driver = _driver;
 	}).then(_ => {
-		return driver.get(URL);
+		return driver.get(options.remoteUrl);
 	}).then(_ => {
 		return driver.executeAsyncScript(waitForLoaderIdle);
 	}).then(loadingError => {
