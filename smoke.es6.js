@@ -405,7 +405,7 @@ function getLoadControlClass(log, onLoadingComplete){
 				let control;
 				if(type === "CSS" && isNode){
 					control = new LoadControl(resourceName, "ignored", true, "CSS resources are ignored when running on node");
-				}else if(/.+\.js6$/.test(resourceName) && isNode){
+				}else if(/.+\.es6\.js$/.test(resourceName) && isNode){
 					// .js6 types indicate the resource may include import or export directives
 					// what about when node does support import/export ?
 					control = new LoadControl(resourceName, "ignored", true, "js6 resources are ignored when running on node");
@@ -607,7 +607,7 @@ Action.add("click", (driver, action, scratch, id) => {
 	action.click(driver.findElement({id: id}));
 });
 
-Action.action.keys = {
+let KEYS = Action.action.keys = {
 	null: '\uE000',
 	cancel: '\uE001',
 	help: '\uE002',
@@ -1510,14 +1510,14 @@ function executeActions(driver){
 
 function doBrowser(builder, capabilityName, testList, logger, options, remoteLogs){
 	// TODO: make the URL an option
-	//let URL = 'http://localhost:3002/node_modules/bd-smoke/browser-runner.html?remotelyControlled';
-	let URL = 'http://localhost:8080/altoviso/bd-smoke/browser-runner.html?remotelyControlled&root=./';
+
+
 
 	let driver;
 	return builder.build().then(_driver => {
 		driver = _driver;
 	}).then(_ => {
-		return driver.get(URL);
+		return driver.get(options.remoteUrl);
 	}).then(_ => {
 		return driver.executeAsyncScript(waitForLoaderIdle);
 	}).then(loadingError => {
@@ -1892,7 +1892,7 @@ let smoke$1 = {
 
 	checkConfig(options){
 		options = Object.assign({}, options || smoke$1.options);
-		options.capabilities = getCapabilities(options.capabilities, options.cap, options.capPreset, smoke$1.logger)[0];
+		options.capabilities = getCapabilities(options.capabilities, options.provider, options.cap, options.capPreset, smoke$1.logger)[0];
 		options.load = [];
 		for(const control of LoadControl.injections.values()){
 			options.load.push(
