@@ -1138,7 +1138,7 @@ function getTestTree(test, logger, include){
 	}
 
 	try{
-		return [traverse(test, 0, null, !!include), false];
+		return [traverse(test, 0, null, include.length), false];
 	}catch(e){
 		logger.log("smoke:unexpected", test.id, ["failed to filter tests for includes", e]);
 		return [{id: test.id, test: EXCLUDED}, true];
@@ -1272,6 +1272,7 @@ function execute(test, logger, options, driver){
 							).catch(
 								function(e){
 									logger.failTest(testUid, e);
+									options.quitOnFirstFail && context.forEach(node => (node.abort = true));
 									doWork();
 								}
 							);
@@ -1283,6 +1284,7 @@ function execute(test, logger, options, driver){
 					}catch(e){
 						// synchronous error, continue to consume the work stream, which will terminate immediately
 						logger.failTest(testUid, e);
+						options.quitOnFirstFail && context.forEach(node => (node.abort = true));
 					}
 				}else{
 					try{
@@ -1691,7 +1693,6 @@ function runDefault(tests, options, logger){
 	let messages = [];
 
 	function log(title, batch){
-
 		messages.push(title);
 		messages.push("        tests:" + batch.totalCount);
 		messages.push("         pass:" + batch.passCount);
@@ -1821,8 +1822,7 @@ let smoke$1 = {
 	logger: new Logger(defaultOptions),
 
 	get tests(){
-		// give access to the test objects, but not our array so we can maintain order
-		return smokeTests.map(_ => _);
+		return smokeTests;
 	},
 
 	resetAssertCount: resetAssertCount,
