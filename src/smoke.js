@@ -66,8 +66,7 @@ let smoke = {
 	logger: new Logger(defaultOptions),
 
 	get tests(){
-		// give access to the test objects, but not our array so we can maintain order
-		return smokeTests.map(_ => _);
+		return smokeTests;
 	},
 
 	resetAssertCount: resetAssertCount,
