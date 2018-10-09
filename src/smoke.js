@@ -64,7 +64,12 @@ async function loaderIdle(){
 
 
 let smoke = {
-	oem: "altoviso",
+	get oem(){
+		return "altoviso";
+	},
+	get version(){
+		return "1.0.0";
+	},
 	isBrowser: isBrowser,
 	isNode: isNode,
 

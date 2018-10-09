@@ -1853,7 +1853,12 @@
 
 
 	let smoke$1 = {
-		oem: "altoviso",
+		get oem(){
+			return "altoviso";
+		},
+		get version(){
+			return "1.0.0";
+		},
 		isBrowser: isBrowser,
 		isNode: isNode,
 
