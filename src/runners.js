@@ -375,7 +375,6 @@ function runDefault(tests, options, logger){
 	let messages = [];
 
 	function log(title, batch){
-
 		messages.push(title);
 		messages.push("        tests:" + batch.totalCount);
 		messages.push("         pass:" + batch.passCount);

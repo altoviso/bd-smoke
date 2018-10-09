@@ -1,29 +1,29 @@
-const browser = {
+const browser = Object.freeze({
 	toString(){
 		return "browser";
 	}
-};
-const node = {
+});
+const node = Object.freeze({
 	toString(){
 		return "node";
 	}
-};
-const both = {
+});
+const both = Object.freeze({
 	toString(){
 		return "both";
 	}
-};
-const remote = {
+});
+const remote = Object.freeze({
 	toString(){
 		return "remote";
 	}
-};
+});
 
-const testTypes = {
+const testTypes = Object.freeze({
 	browser:browser,
 	node:node,
 	both:both,
 	remote:remote
-};
+});
 
 export default testTypes;
