@@ -4,7 +4,13 @@ import Timer from "./Timer.js";
 
 const Logger = class {
 	constructor(options){
-		this.options = {nameSeparator: "/", console: true};
+		this.options = {
+			nameSeparator: "/",
+			console: true,
+			consoleErrorPrinter: function(e){
+				console.log(e);
+			}
+		};
 		this.reset(options);
 	}
 
@@ -114,7 +120,7 @@ const Logger = class {
 		result[3] = error;
 		if(this._console){
 			console.log("FAIL[" + result[0] + "]");
-			console.log(error);
+			this.options.consoleErrorPrinter(error);
 		}
 	}
 
@@ -131,7 +137,7 @@ const Logger = class {
 		this.log("SCAFFOLD FAIL", 0, [scaffoldName + ":" + phaseText, error], true);
 		if(this._console){
 			console.log("SCAFFOLD FAIL[" + scaffoldName + ":" + phaseText + "]");
-			console.log(error);
+			this.options.consoleErrorPrinter(error);
 		}
 	}
 
