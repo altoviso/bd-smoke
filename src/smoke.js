@@ -4,7 +4,7 @@ import Logger from "./Logger.js";
 import getLoadControlClass from "./LoadControl.js";
 import Action from "./Action.js";
 import stringify from "./stringify.js";
-import {resetAssertCount, getAssertCount, assert} from "./assert.js";
+import {resetAssertCount, bumpAssertCount, getAssertCount, assert} from "./assert.js";
 import {getUrlArgs, argsToOptions, processOptions} from "./config.js";
 import testTypes from "./testTypes.js";
 import {defTest, orderTests} from "./defTests.js";
@@ -28,8 +28,20 @@ let defaultOptions = {
 let smokeTests = [];
 
 let LoadControl = getLoadControlClass(
+	// log
 	(...args) => (smoke.logger.log("smoke:load", 0, args)),
-	() => (smokeTests = orderTests(smokeTests))
+
+	// onResourceLoadComplete
+	(control) => {
+		smokeTests.forEach(test => {
+			if(!("order" in test)){
+				test.order = 10000 + control.order;
+			}
+		});
+	},
+
+	// onLoadingComplete
+	() => (smokeTests = orderTests(smokeTests)),
 );
 
 function pause(ms){
@@ -65,11 +77,13 @@ let smoke = {
 	Logger: Logger,
 	logger: new Logger(defaultOptions),
 
+	testTypes: testTypes,
 	get tests(){
 		return smokeTests;
 	},
 
 	resetAssertCount: resetAssertCount,
+	bumpAssertCount: bumpAssertCount,
 	getAssertCount: getAssertCount,
 	assert: assert,
 
@@ -153,12 +167,20 @@ let smoke = {
 		}
 		(dest.load || []).slice().forEach(resource => {
 			if(/\.css/i.test(resource)){
-				smoke.injectCss(resource);
+				if(isNode){
+					smoke.logger.log("smoke:info", 0, ["CSS resource ignored on node"]);
+				}else{
+					smoke.injectCss(resource);
+				}
 			}else if(smoke.isAmd && !/\.[^./]+$/.test(resource)){
 				// assume resource is an AMD module if an AMD loader is present and resource does not have a file type
 				smoke.loadAmdModule(resource);
 			}else if(isNode){
-				smoke.loadNodeModule(resource);
+				if(/\.es6\.js$/.test(resource)){
+					smoke.logger.log("smoke:info", 0, ["es6 resource ignored on node"]);
+				}else{
+					smoke.loadNodeModule(resource);
+				}
 			}else{
 				smoke.injectScript(resource);
 			}

@@ -1,7 +1,7 @@
-import {isNode} from "./environment.js";
+import {isNode, isBrowser} from "./environment.js";
 import getPromise from "./getPromise.js";
 
-export default function getLoadControlClass(log, onLoadingComplete){
+export default function getLoadControlClass(log, onResourceLoadComplete, onLoadingComplete){
 	class LoadControl {
 		constructor(resourceName, status, resolution, errorInfo){
 			let promise = getPromise();
@@ -14,6 +14,7 @@ export default function getLoadControlClass(log, onLoadingComplete){
 
 			}
 			Object.defineProperties(this, {
+				order: {value: ++LoadControl.counter},
 				resourceName: {value: resourceName},
 				loadedName: {value: resolution !== undefined ? resourceName : false, writable: true},
 				status: {value: status, writable: true},
@@ -55,6 +56,7 @@ export default function getLoadControlClass(log, onLoadingComplete){
 				this.loadedValue = resolution;
 				this.status = true;
 			}
+			onResourceLoadComplete(this);
 			this.promise.resolve(resolution);
 		}
 
@@ -109,6 +111,7 @@ export default function getLoadControlClass(log, onLoadingComplete){
 			}
 		}
 
+
 		static load(resourceName, type, proc){
 			let control = LoadControl.getControl(resourceName, type);
 			if(!control){
@@ -128,15 +131,18 @@ export default function getLoadControlClass(log, onLoadingComplete){
 		}
 
 		static browserInject(control, tag, props){
+			let node;
 			let handler = (e) => {
+				control.loadedName = node.src;
 				if(e.type === "load"){
-					control.resolve(true);
+					// TODO: make sure this kind of failure is detected on node also
+					control.resolve(!LoadControl.windowErrors[node.src]);
 				}else{
 					control.resolve(false, e);
 				}
 			};
 			try{
-				let node = document.createElement(tag);
+				node = document.createElement(tag);
 				node.addEventListener("load", handler, false);
 				node.addEventListener("error", handler, false);
 				Object.keys(props).forEach(p => (node[p] = props[p]));
@@ -189,11 +195,22 @@ export default function getLoadControlClass(log, onLoadingComplete){
 		}
 	}
 
+	LoadControl.counter = 0;
 	LoadControl.injections = new Map();
 	LoadControl.loadingPromise = getPromise();
 	LoadControl.loadingPromise.resolve(true);
 	LoadControl.loadingError = false;
 	LoadControl.injectRelativePrefix = "";
+	LoadControl.windowErrors = {};
+
+	if(isBrowser){
+		window.addEventListener("error", (e) => {
+			if(e.filename){
+				LoadControl.windowErrors[e.filename] = true;
+			}
+		});
+	}
+
 
 	return LoadControl;
 }
