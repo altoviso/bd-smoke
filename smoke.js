@@ -75,7 +75,13 @@
 
 	const Logger = class {
 		constructor(options){
-			this.options = {nameSeparator: "/", console: true};
+			this.options = {
+				nameSeparator: "/",
+				console: true,
+				consoleErrorPrinter: function(e){
+					console.log(e);
+				}
+			};
 			this.reset(options);
 		}
 
@@ -185,7 +191,7 @@
 			result[3] = error;
 			if(this._console){
 				console.log("FAIL[" + result[0] + "]");
-				console.log(error);
+				this.options.consoleErrorPrinter(error);
 			}
 		}
 
@@ -202,7 +208,7 @@
 			this.log("SCAFFOLD FAIL", 0, [scaffoldName + ":" + phaseText, error], true);
 			if(this._console){
 				console.log("SCAFFOLD FAIL[" + scaffoldName + ":" + phaseText + "]");
-				console.log(error);
+				this.options.consoleErrorPrinter(error);
 			}
 		}
 
@@ -336,7 +342,7 @@
 		return p;
 	}
 
-	function getLoadControlClass(log, onLoadingComplete){
+	function getLoadControlClass(log, onResourceLoadComplete, onLoadingComplete){
 		class LoadControl {
 			constructor(resourceName, status, resolution, errorInfo){
 				let promise = getPromise();
@@ -349,6 +355,7 @@
 
 				}
 				Object.defineProperties(this, {
+					order: {value: ++LoadControl.counter},
 					resourceName: {value: resourceName},
 					loadedName: {value: resolution !== undefined ? resourceName : false, writable: true},
 					status: {value: status, writable: true},
@@ -390,6 +397,7 @@
 					this.loadedValue = resolution;
 					this.status = true;
 				}
+				onResourceLoadComplete(this);
 				this.promise.resolve(resolution);
 			}
 
@@ -444,6 +452,7 @@
 				}
 			}
 
+
 			static load(resourceName, type, proc){
 				let control = LoadControl.getControl(resourceName, type);
 				if(!control){
@@ -463,15 +472,18 @@
 			}
 
 			static browserInject(control, tag, props){
+				let node;
 				let handler = (e) => {
+					control.loadedName = node.src;
 					if(e.type === "load"){
-						control.resolve(true);
+						// TODO: make sure this kind of failure is detected on node also
+						control.resolve(!LoadControl.windowErrors[node.src]);
 					}else{
 						control.resolve(false, e);
 					}
 				};
 				try{
-					let node = document.createElement(tag);
+					node = document.createElement(tag);
 					node.addEventListener("load", handler, false);
 					node.addEventListener("error", handler, false);
 					Object.keys(props).forEach(p => (node[p] = props[p]));
@@ -524,11 +536,22 @@
 			}
 		}
 
+		LoadControl.counter = 0;
 		LoadControl.injections = new Map();
 		LoadControl.loadingPromise = getPromise();
 		LoadControl.loadingPromise.resolve(true);
 		LoadControl.loadingError = false;
 		LoadControl.injectRelativePrefix = "";
+		LoadControl.windowErrors = {};
+
+		if(isBrowser){
+			window.addEventListener("error", (e) => {
+				if(e.filename){
+					LoadControl.windowErrors[e.filename] = true;
+				}
+			});
+		}
+
 
 		return LoadControl;
 	}
@@ -795,13 +818,17 @@
 		assertCount = 0;
 	}
 
+	function bumpAssertCount(){
+		++assertCount;
+	}
+
 	function getAssertCount(){
 		return assertCount;
 	}
 
 	function assert(value, message){
 		// trivial assert; any function that throws upon a detected error will work
-		++assertCount;
+		bumpAssertCount();
 		if(!value){
 			throw new Error(message || "fail");
 		}
@@ -927,33 +954,33 @@
 		});
 	}
 
-	const browser = {
+	const browser = Object.freeze({
 		toString(){
 			return "browser";
 		}
-	};
-	const node = {
+	});
+	const node = Object.freeze({
 		toString(){
 			return "node";
 		}
-	};
-	const both = {
+	});
+	const both = Object.freeze({
 		toString(){
 			return "both";
 		}
-	};
-	const remote = {
+	});
+	const remote = Object.freeze({
 		toString(){
 			return "remote";
 		}
-	};
+	});
 
-	const testTypes = {
+	const testTypes = Object.freeze({
 		browser:browser,
 		node:node,
 		both:both,
 		remote:remote
-	};
+	});
 
 	function checkTest(test, logger){
 		//     ensure legal structure
@@ -1790,8 +1817,20 @@
 	let smokeTests = [];
 
 	let LoadControl = getLoadControlClass(
+		// log
 		(...args) => (smoke$1.logger.log("smoke:load", 0, args)),
-		() => (smokeTests = orderTests(smokeTests))
+
+		// onResourceLoadComplete
+		(control) => {
+			smokeTests.forEach(test => {
+				if(!("order" in test)){
+					test.order = 10000 + control.order;
+				}
+			});
+		},
+
+		// onLoadingComplete
+		() => (smokeTests = orderTests(smokeTests)),
 	);
 
 	function pause(ms){
@@ -1827,11 +1866,13 @@
 		Logger: Logger,
 		logger: new Logger(defaultOptions),
 
+		testTypes: testTypes,
 		get tests(){
 			return smokeTests;
 		},
 
 		resetAssertCount: resetAssertCount,
+		bumpAssertCount: bumpAssertCount,
 		getAssertCount: getAssertCount,
 		assert: assert,
 
@@ -1915,12 +1956,20 @@
 			}
 			(dest.load || []).slice().forEach(resource => {
 				if(/\.css/i.test(resource)){
-					smoke$1.injectCss(resource);
+					if(isNode){
+						smoke$1.logger.log("smoke:info", 0, ["CSS resource ignored on node"]);
+					}else{
+						smoke$1.injectCss(resource);
+					}
 				}else if(smoke$1.isAmd && !/\.[^./]+$/.test(resource)){
 					// assume resource is an AMD module if an AMD loader is present and resource does not have a file type
 					smoke$1.loadAmdModule(resource);
 				}else if(isNode){
-					smoke$1.loadNodeModule(resource);
+					if(/\.es6\.js$/.test(resource)){
+						smoke$1.logger.log("smoke:info", 0, ["es6 resource ignored on node"]);
+					}else{
+						smoke$1.loadNodeModule(resource);
+					}
 				}else{
 					smoke$1.injectScript(resource);
 				}
