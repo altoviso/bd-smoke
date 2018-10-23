@@ -721,7 +721,7 @@
 			},
 
 			propName = function(name){
-				return !(/\s/.test(name)) ? (name + ":") : ("'" + name + "':");
+				return /[^a-zA-Z0-9_$]/.test(name) ? ("'" + name + "':") : (name + ":");
 			},
 
 			seen = function(it){
