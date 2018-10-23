@@ -68,7 +68,7 @@ let smoke = {
 		return "altoviso";
 	},
 	get version(){
-		return "1.0.0";
+		return "1.0.1";
 	},
 	isBrowser: isBrowser,
 	isNode: isNode,
