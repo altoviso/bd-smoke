@@ -78,25 +78,25 @@ let smoke = {
 
 	options: defaultOptions,
 
-	Timer: Timer,
-	Logger: Logger,
+	Timer,
+	Logger,
 	logger: new Logger(defaultOptions),
 
-	testTypes: testTypes,
+	testTypes,
 	get tests(){
 		return smokeTests;
 	},
 
-	resetAssertCount: resetAssertCount,
-	bumpAssertCount: bumpAssertCount,
-	getAssertCount: getAssertCount,
-	assert: assert,
+	resetAssertCount,
+	bumpAssertCount,
+	getAssertCount,
+	assert,
 
-	pause: pause,
+	pause,
 
-	stringify: stringify,
+	stringify,
 
-	Action: Action,
+	Action,
 
 	injectScript: LoadControl.injectScript,
 	injectCss: LoadControl.injectCss,
@@ -151,10 +151,10 @@ let smoke = {
 		return LoadControl.loadingError;
 	},
 
-	argsToOptions: argsToOptions,
+	argsToOptions,
 
-	getUrlArgs: getUrlArgs,
-	processOptions: processOptions,
+	getUrlArgs,
+	processOptions,
 
 	configureBrowser(){
 		return smoke.configure(smoke.getUrlArgs());
@@ -270,11 +270,13 @@ async function defaultStart(){
 	}
 
 	let options = smoke.argsToOptions(isNode ? process.argv.slice(2) : smoke.getUrlArgs());
+
+	// set LoadControl.injectRelativePrefix...
 	if(options.root){
 		let root = options.root;
 		LoadControl.injectRelativePrefix = /\/$/.test(root) ? root : root + "/";
 	}else if(isBrowser){
-		if(/\/node_modules\/bd-smoke\/browser-runner\.html$/.test(window.location.pathname)){
+		if(/\/node_modules\/bd-smoke\/browser-runner(-amd)?\.html$/.test(window.location.pathname)){
 			LoadControl.injectRelativePrefix = options.root = "../../";
 		}else{
 			smoke.logger.log("smoke:info", 0, ["smoke not being run by the default runner; therefore no idea how to set root; suggest you set it explicitly"]);
@@ -282,6 +284,7 @@ async function defaultStart(){
 	}else{
 		LoadControl.injectRelativePrefix = options.root = process.cwd() + "/";
 	}
+	smoke.logger.log("smoke:info", 0, ["root directory for relative injection paths:" + LoadControl.injectRelativePrefix]);
 
 	await smoke.configure(options);
 	if(!smoke.loadedResourcesCount){
@@ -314,6 +317,8 @@ async function defaultStart(){
 }
 
 // let another process that loaded smoke take over and set autoRun to false to prevent the default behavior
-smoke.pause(20).then(defaultStart);
+// TODO: this might not work in AMD since smoke could be loaded as a dependent of the module that sets autoRun to false
+// and other modules may have to be loaded before that module
+smoke.pause(10).then(defaultStart);
 
 export default smoke;
