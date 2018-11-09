@@ -201,6 +201,29 @@ function executeActions(driver){
 		})();
 	});
 }
+async function executeTestList(testList, driver, capabilityName, logger, options, remoteLogs){
+	for(let test of testList){
+		if(test.type === testTypes.remote){
+			await execute(test, logger, options, driver);
+		}else{
+			let testId = capabilityName + ":" + test.id;
+			logger.log("smoke:progress", 0, [testId + ": started"]);
+			await driver.executeScript(exec, test.id, options.remoteOptions || 0).then(testId => {
+				return executeActions(driver).then(log => {
+					log.id = testId;
+					remoteLogs.push(log);
+					if(log.passCount + log.failCount + log.scaffoldFailCount === 0){
+						logger.log("smoke:warning", 0, ["remote test [" + test.id + "] did not cause any tests to run", noTestsHint]);
+					}
+					let msg = `[${testId}] pass: ${log.passCount}, fail: ${log.failCount}, scaffold fail: ${log.scaffoldFailCount}`;
+					logger.log("smoke:progress", 0, [msg]);
+					logger.log("smoke:remote-log", 0, [log], true);
+				});
+			});
+		}
+	}
+	return true;
+}
 
 function doBrowser(builder, capabilityName, testList, logger, options, remoteLogs){
 	let driver;
@@ -231,40 +254,7 @@ function doBrowser(builder, capabilityName, testList, logger, options, remoteLog
 		startupLog.id = "startup-log";
 		remoteLogs.push(startupLog);
 	}).then(() => {
-		let testList_ = testList.slice();
-		return new Promise(function(resolve, reject){
-			(function executeTestList(){
-				if(!testList_.length){
-					resolve();
-				}else{
-					let test = testList_.shift();
-					if(test.type === testTypes.remote){
-						execute(test, logger, options, driver).then(() => {
-							executeTestList();
-						});
-					}else{
-						let testId = capabilityName + ":" + test.id;
-						logger.log("smoke:progress", 0, [testId + ": started"]);
-						driver.executeScript(exec, test.id, options.remoteOptions || 0).then(testId => {
-							return executeActions(driver).then(log => {
-								log.id = testId;
-								remoteLogs.push(log);
-								if(log.passCount + log.failCount + log.scaffoldFailCount === 0){
-									logger.log("smoke:warning", 0, ["remote test [" + test.id + "] did not cause any tests to run", noTestsHint]);
-								}
-								let msg = `[${testId}] pass: ${log.passCount}, fail: ${log.failCount}, scaffold fail: ${log.scaffoldFailCount}`;
-								logger.log("smoke:progress", 0, [msg]);
-								logger.log("smoke:remote-log", 0, [log], true);
-							});
-						}).then(() => {
-							executeTestList();
-						}).catch(e => {
-							reject(e);
-						});
-					}
-				}
-			})();
-		});
+		return executeTestList(testList.slice(), driver, capabilityName, logger, options, remoteLogs);
 	}).then(() => {
 		return driver.quit().then(() => true);
 	}).catch(e => {
@@ -281,31 +271,27 @@ function doBrowser(builder, capabilityName, testList, logger, options, remoteLog
 	});
 }
 
-function runLocal(_testList, logger, options){
+async function runLocal(_testList, logger, options){
 	// execute each test in the testList
 	let testList = _testList.slice();
 	if(options.concurrent){
 		return Promise.all(testList.map(test => execute(test, logger, options).promise)).then(() => logger);
 	}else{
-		return new Promise((resolve) => {
-			(function finish(){
-				if(testList.length && !logger.unexpected){
-					execute(testList.shift(), logger, options).then(() => {
-						finish();
-					});
-				}else{
-					if(options.remotelyControlled){
-						queueActions(Action.action(Action.action.testComplete, logger.getResults()));
-						logger.reset();
-					}
-					resolve(logger);
-				}
-			})();
-		});
+		for(let test of testList){
+			if(logger.unexpected){
+				break;
+			}
+			await execute(test, logger, options);
+		}
+		if(options.remotelyControlled){
+			queueActions(Action.action(Action.action.testComplete, logger.getResults()));
+			logger.reset();
+		}
+		return (logger);
 	}
 }
 
-function runRemote(testList, logger, options, capabilities){
+async function runRemote(testList, logger, options, capabilities){
 	// for each capability...
 	//     configure a driver
 	//     for each test
@@ -315,9 +301,7 @@ function runRemote(testList, logger, options, capabilities){
 	//              call smoke.run, pass driver to test
 	let remoteLogs = [];
 	const {Builder} = require("selenium-webdriver");
-
-
-	function doNextCapability(){
+	while(capabilities.length){
 		let [capName, caps] = capabilities.pop();
 		logger.log(["smoke:progress"], 0, ["starting capability:" + capName]);
 		caps = Object.assign({}, caps);
@@ -327,19 +311,15 @@ function runRemote(testList, logger, options, capabilities){
 		if(provider){
 			builder.usingServer(options.provider.url || provider.url);
 		}
-		return doBrowser(builder, capName, testList, logger, options, remoteLogs).then(
-			() => (capabilities.length ? doNextCapability() : remoteLogs)
-		);
+		await doBrowser(builder, capName, testList, logger, options, remoteLogs);
 	}
 
-	return doNextCapability().then(() => {
-		// compute the totals across all remote logs
-		let totals = {totalCount: 0, passCount: 0, failCount: 0, scaffoldFailCount: 0};
-		let keys = Object.keys(totals);
-		remoteLogs.forEach(log => (keys.forEach(k => (totals[k] += (k in log ? log[k] : 0)))));
-		Object.assign(remoteLogs, totals);
-		return remoteLogs;
-	});
+	// compute the totals across all remote logs
+	let totals = {totalCount: 0, passCount: 0, failCount: 0, scaffoldFailCount: 0};
+	let keys = Object.keys(totals);
+	remoteLogs.forEach(log => (keys.forEach(k => (totals[k] += (k in log ? log[k] : 0)))));
+	Object.assign(remoteLogs, totals);
+	return remoteLogs;
 }
 
 function run(tests, testInstruction, logger, options, remote, resetLog){
