@@ -40,7 +40,8 @@ function argsToOptions(args, _normalizeOptionName){
 			let match = arg.match(/([^=]+)=(.+)/),
 				name = normalizeName(match[1]),
 				value = match[2];
-			value = (/\s*((^".+"$)|(^'.+'$))\s*/.test(value) ? value.match(/^['"](.+)['"]$/)[1] : value).trim();
+			match =  value.trim().match(/^['"](.+)['"]$/);
+			value = match ? match[1] : value;
 			if(name in options){
 				if(!Array.isArray(options[name])){
 					options[name] = [options[name], value];
@@ -66,7 +67,7 @@ function processOptions(options, dest){
 	// process everything except the profiles into dest; this allows modules loaded via profiles to use the options
 
 	// toArray also filters out falsey values
-	let toArray = (src) => (Array.isArray(src) ? src : [src]).filter(_ => _);
+	let toArray = (src) => (Array.isArray(src) ? src : [src]).filter(x => !!x);
 	let processInclude = (dest, value) => {
 		value.split(/[;,]/).forEach(item => {
 			item = item.split(/[./]/).map(x => x.trim()).filter(x => !!x);
@@ -74,8 +75,9 @@ function processOptions(options, dest){
 		});
 		return dest;
 	};
+	let commaListToArray = src => src.split(/[,;]/).map(s => s.trim()).filter(x => !!x);
 	let processCommaList = (dest, src) => {
-		return dest.concat(src.split(/[,;]/).map(s => s.trim()).filter(s => !!s));
+		return dest.concat(commaListToArray(src));
 	};
 
 	Object.keys(options).forEach(name => {
@@ -87,7 +89,7 @@ function processOptions(options, dest){
 				break;
 			case "package":
 				toArray(value).forEach(value => {
-					value.split(/[,;]/).map(s => s.trim()).filter(s => !!s).forEach(p => {
+					commaListToArray(value).forEach(p => {
 						let split = p.split(":").map(item => item.trim());
 						require.config({packages: [{name: split[0], location: split[1], main: split[2]}]});
 					});
