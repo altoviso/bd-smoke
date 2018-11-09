@@ -188,7 +188,7 @@
 			this._failCount++;
 			let result = this._results[id];
 			result[2] = false;
-			result[3] = error;
+			result[3] = [error.message, ...(error.stack.split("\n"))];
 			if(this._console){
 				console.log("FAIL[" + result[0] + "]");
 				this.options.consoleErrorPrinter(error);
@@ -876,7 +876,8 @@
 				let match = arg.match(/([^=]+)=(.+)/),
 					name = normalizeName(match[1]),
 					value = match[2];
-				value = (/\s*((^".+"$)|(^'.+'$))\s*/.test(value) ? value.match(/^['"](.+)['"]$/)[1] : value).trim();
+				match =  value.trim().match(/^['"](.+)['"]$/);
+				value = match ? match[1] : value;
 				if(name in options){
 					if(!Array.isArray(options[name])){
 						options[name] = [options[name], value];
@@ -902,7 +903,7 @@
 		// process everything except the profiles into dest; this allows modules loaded via profiles to use the options
 
 		// toArray also filters out falsey values
-		let toArray = (src) => (Array.isArray(src) ? src : [src]).filter(_ => _);
+		let toArray = (src) => (Array.isArray(src) ? src : [src]).filter(x => !!x);
 		let processInclude = (dest, value) => {
 			value.split(/[;,]/).forEach(item => {
 				item = item.split(/[./]/).map(x => x.trim()).filter(x => !!x);
@@ -910,8 +911,9 @@
 			});
 			return dest;
 		};
+		let commaListToArray = src => src.split(/[,;]/).map(s => s.trim()).filter(x => !!x);
 		let processCommaList = (dest, src) => {
-			return dest.concat(src.split(/[,;]/).map(s => s.trim()).filter(s => !!s));
+			return dest.concat(commaListToArray(src));
 		};
 
 		Object.keys(options).forEach(name => {
@@ -923,7 +925,7 @@
 					break;
 				case "package":
 					toArray(value).forEach(value => {
-						value.split(/[,;]/).map(s => s.trim()).filter(s => !!s).forEach(p => {
+						commaListToArray(value).forEach(p => {
 							let split = p.split(":").map(item => item.trim());
 							require.config({packages: [{name: split[0], location: split[1], main: split[2]}]});
 						});
@@ -1552,6 +1554,29 @@
 			})();
 		});
 	}
+	async function executeTestList(testList, driver, capabilityName, logger, options, remoteLogs){
+		for(let test of testList){
+			if(test.type === testTypes.remote){
+				await execute(test, logger, options, driver);
+			}else{
+				let testId = capabilityName + ":" + test.id;
+				logger.log("smoke:progress", 0, [testId + ": started"]);
+				await driver.executeScript(exec, test.id, options.remoteOptions || 0).then(testId => {
+					return executeActions(driver).then(log => {
+						log.id = testId;
+						remoteLogs.push(log);
+						if(log.passCount + log.failCount + log.scaffoldFailCount === 0){
+							logger.log("smoke:warning", 0, ["remote test [" + test.id + "] did not cause any tests to run", noTestsHint]);
+						}
+						let msg = `[${testId}] pass: ${log.passCount}, fail: ${log.failCount}, scaffold fail: ${log.scaffoldFailCount}`;
+						logger.log("smoke:progress", 0, [msg]);
+						logger.log("smoke:remote-log", 0, [log], true);
+					});
+				});
+			}
+		}
+		return true;
+	}
 
 	function doBrowser(builder, capabilityName, testList, logger, options, remoteLogs){
 		let driver;
@@ -1582,40 +1607,7 @@
 			startupLog.id = "startup-log";
 			remoteLogs.push(startupLog);
 		}).then(() => {
-			let testList_ = testList.slice();
-			return new Promise(function(resolve, reject){
-				(function executeTestList(){
-					if(!testList_.length){
-						resolve();
-					}else{
-						let test = testList_.shift();
-						if(test.type === testTypes.remote){
-							execute(test, logger, options, driver).then(() => {
-								executeTestList();
-							});
-						}else{
-							let testId = capabilityName + ":" + test.id;
-							logger.log("smoke:progress", 0, [testId + ": started"]);
-							driver.executeScript(exec, test.id, options.remoteOptions || 0).then(testId => {
-								return executeActions(driver).then(log => {
-									log.id = testId;
-									remoteLogs.push(log);
-									if(log.passCount + log.failCount + log.scaffoldFailCount === 0){
-										logger.log("smoke:warning", 0, ["remote test [" + test.id + "] did not cause any tests to run", noTestsHint]);
-									}
-									let msg = `[${testId}] pass: ${log.passCount}, fail: ${log.failCount}, scaffold fail: ${log.scaffoldFailCount}`;
-									logger.log("smoke:progress", 0, [msg]);
-									logger.log("smoke:remote-log", 0, [log], true);
-								});
-							}).then(() => {
-								executeTestList();
-							}).catch(e => {
-								reject(e);
-							});
-						}
-					}
-				})();
-			});
+			return executeTestList(testList.slice(), driver, capabilityName, logger, options, remoteLogs);
 		}).then(() => {
 			return driver.quit().then(() => true);
 		}).catch(e => {
@@ -1632,31 +1624,27 @@
 		});
 	}
 
-	function runLocal(_testList, logger, options){
+	async function runLocal(_testList, logger, options){
 		// execute each test in the testList
 		let testList = _testList.slice();
 		if(options.concurrent){
 			return Promise.all(testList.map(test => execute(test, logger, options).promise)).then(() => logger);
 		}else{
-			return new Promise((resolve) => {
-				(function finish(){
-					if(testList.length && !logger.unexpected){
-						execute(testList.shift(), logger, options).then(() => {
-							finish();
-						});
-					}else{
-						if(options.remotelyControlled){
-							queueActions(Action.action(Action.action.testComplete, logger.getResults()));
-							logger.reset();
-						}
-						resolve(logger);
-					}
-				})();
-			});
+			for(let test of testList){
+				if(logger.unexpected){
+					break;
+				}
+				await execute(test, logger, options);
+			}
+			if(options.remotelyControlled){
+				queueActions(Action.action(Action.action.testComplete, logger.getResults()));
+				logger.reset();
+			}
+			return (logger);
 		}
 	}
 
-	function runRemote(testList, logger, options, capabilities){
+	async function runRemote(testList, logger, options, capabilities){
 		// for each capability...
 		//     configure a driver
 		//     for each test
@@ -1666,9 +1654,7 @@
 		//              call smoke.run, pass driver to test
 		let remoteLogs = [];
 		const {Builder} = require("selenium-webdriver");
-
-
-		function doNextCapability(){
+		while(capabilities.length){
 			let [capName, caps] = capabilities.pop();
 			logger.log(["smoke:progress"], 0, ["starting capability:" + capName]);
 			caps = Object.assign({}, caps);
@@ -1678,19 +1664,15 @@
 			if(provider){
 				builder.usingServer(options.provider.url || provider.url);
 			}
-			return doBrowser(builder, capName, testList, logger, options, remoteLogs).then(
-				() => (capabilities.length ? doNextCapability() : remoteLogs)
-			);
+			await doBrowser(builder, capName, testList, logger, options, remoteLogs);
 		}
 
-		return doNextCapability().then(() => {
-			// compute the totals across all remote logs
-			let totals = {totalCount: 0, passCount: 0, failCount: 0, scaffoldFailCount: 0};
-			let keys = Object.keys(totals);
-			remoteLogs.forEach(log => (keys.forEach(k => (totals[k] += (k in log ? log[k] : 0)))));
-			Object.assign(remoteLogs, totals);
-			return remoteLogs;
-		});
+		// compute the totals across all remote logs
+		let totals = {totalCount: 0, passCount: 0, failCount: 0, scaffoldFailCount: 0};
+		let keys = Object.keys(totals);
+		remoteLogs.forEach(log => (keys.forEach(k => (totals[k] += (k in log ? log[k] : 0)))));
+		Object.assign(remoteLogs, totals);
+		return remoteLogs;
 	}
 
 	function run(tests, testInstruction, logger, options, remote, resetLog){
@@ -1857,7 +1839,7 @@
 			return "altoviso";
 		},
 		get version(){
-			return "1.0.0";
+			return "1.0.1";
 		},
 		isBrowser: isBrowser,
 		isNode: isNode,
@@ -1867,25 +1849,25 @@
 
 		options: defaultOptions,
 
-		Timer: Timer,
-		Logger: Logger,
+		Timer,
+		Logger,
 		logger: new Logger(defaultOptions),
 
-		testTypes: testTypes,
+		testTypes,
 		get tests(){
 			return smokeTests;
 		},
 
-		resetAssertCount: resetAssertCount,
-		bumpAssertCount: bumpAssertCount,
-		getAssertCount: getAssertCount,
-		assert: assert,
+		resetAssertCount,
+		bumpAssertCount,
+		getAssertCount,
+		assert,
 
-		pause: pause,
+		pause,
 
-		stringify: stringify,
+		stringify,
 
-		Action: Action,
+		Action,
 
 		injectScript: LoadControl.injectScript,
 		injectCss: LoadControl.injectCss,
@@ -1940,10 +1922,10 @@
 			return LoadControl.loadingError;
 		},
 
-		argsToOptions: argsToOptions,
+		argsToOptions,
 
-		getUrlArgs: getUrlArgs,
-		processOptions: processOptions,
+		getUrlArgs,
+		processOptions,
 
 		configureBrowser(){
 			return smoke$1.configure(smoke$1.getUrlArgs());
@@ -2059,11 +2041,13 @@
 		}
 
 		let options = smoke$1.argsToOptions(isNode ? process.argv.slice(2) : smoke$1.getUrlArgs());
+
+		// set LoadControl.injectRelativePrefix...
 		if(options.root){
 			let root = options.root;
 			LoadControl.injectRelativePrefix = /\/$/.test(root) ? root : root + "/";
 		}else if(isBrowser){
-			if(/\/node_modules\/bd-smoke\/browser-runner\.html$/.test(window.location.pathname)){
+			if(/\/node_modules\/bd-smoke\/browser-runner(-amd)?\.html$/.test(window.location.pathname)){
 				LoadControl.injectRelativePrefix = options.root = "../../";
 			}else{
 				smoke$1.logger.log("smoke:info", 0, ["smoke not being run by the default runner; therefore no idea how to set root; suggest you set it explicitly"]);
@@ -2071,6 +2055,7 @@
 		}else{
 			LoadControl.injectRelativePrefix = options.root = process.cwd() + "/";
 		}
+		smoke$1.logger.log("smoke:info", 0, ["root directory for relative injection paths:" + LoadControl.injectRelativePrefix]);
 
 		await smoke$1.configure(options);
 		if(!smoke$1.loadedResourcesCount){
@@ -2103,7 +2088,9 @@
 	}
 
 	// let another process that loaded smoke take over and set autoRun to false to prevent the default behavior
-	smoke$1.pause(20).then(defaultStart);
+	// TODO: this might not work in AMD since smoke could be loaded as a dependent of the module that sets autoRun to false
+	// and other modules may have to be loaded before that module
+	smoke$1.pause(10).then(defaultStart);
 
 	// WARNING: this file should never be loaded directly; it is _only_ used to generate a UMD build with rollup
 	smoke$1.isUMD = true;

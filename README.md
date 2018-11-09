@@ -29,7 +29,7 @@
 
 * Exit status for CI support 
 
-* All this power yet simple and easy to hack: the complete code stack is less than 650 lines in one file
+* All this power yet simple and easy to hack: the complete code stack is about 2000 lines in one file
 
 ## Installation
 
@@ -76,9 +76,8 @@ smoke.defTest({
 
 Now run the test, from your project root directory, execute
 ```
-$ node ./node_modules/bd-smoke/node-runner.js -p=../../test/trivial-node.js
+$  node ./node_modules/bd-smoke/smoke.js -l=./test/trivial-node.js
 ```
-*warning* the -p argument is relative to ./node_modules/bd-smoke/node-runner.js
 
 ## Getting Started in the Browser without AMD
 
@@ -101,10 +100,10 @@ smoke.defTest({
 
 Now run the test: in the browser, navigate to...
 ```
-<as required for your environment><your project directory>/node_modules/bd-smoke/browser-runner.html?p=../../test/trivial-nonAMD.js
+<as required for your environment><your project directory>/node_modules/bd-smoke/browser-runner.html?l=./test/trivial-nonAMD.js
 ```
 
-*warning* the -p argument is relative to <as required for your environment><your project directory>/node_modules/bd-smoke/browser-runner.html
+*warning* if the absence of a ```root``` config options, the -l argument is relative to ```<as required for your environment><your project directory>```.
 
 ## Getting Started in the Browser with AMD
 
@@ -112,7 +111,7 @@ Assuming you have a `test` directory in the root of your project, create the fil
 that looks like this:
 
 ```
-define(["smoke"], function(smoke){
+require(["smoke"], function(smoke){
 	const assert = smoke.assert;
 
 	smoke.defTest({
@@ -128,74 +127,49 @@ define(["smoke"], function(smoke){
 
 Now run the test: in the browser, navigate to...
 ```
-<as required for your environment><your project directory>/node_modules/bd-smoke/browser-runner-amd.html?p=test/trivial-AMD&package=test:../../test
+<as required for your environment><your project directory>/node_modules/bd-smoke/browser-runner-amd.html?l=./test/trivial-AMD.js
 ```
-*warning* the package path argument is relative to <as required for your environment><your project directory>/node_modules/bd-smoke/browser-runner.html
+*warning* if the absence of a ```root``` config options, the -l argument is relative to ```<as required for your environment><your project directory>```.
 
-## Getting Started with UMD
-
-The three examples above can be combined into one example that will work in all three environments by defining the test
-in the file `trivial.js` using UMD like this:
-
-```
-(function(factory){
-	if(typeof define != "undefined"){
-		define(["smoke"], factory);
-	}else if(typeof module != "undefined"){
-		factory(require("bd-smoke"));
-	}else{
-		factory(smoke);
-	}
-})(function(smoke){
-	const assert = smoke.assert;
-
-	smoke.defTest({
-		id: "trivial",
-		tests: [
-			["example-pass", function(){
-				assert(true);
-			}]
-		]
-	});
-
-});
-
-```
-Run it on Node
-```
-$ node ./node_modules/bd-smoke/node-runner.js -p=../../test/trivial.js
-```
-*warning* the -p argument is relative to ./node_modules/bd-smoke/node-runner.js
-
-Run it in the browser without AMD
-```
-<as-required-for-your-environment>/node_modules/smoke/browser-runner.html?p=../../test/trivial.js"
-```
-Run it in the browser with AMD
-```
-<as-required-for-your-environment>/node_modules/smoke/browser-runner-amd.html?p=test/trivial&package=test:../../test
-```
 ## Command-line / URL switches
 bd-smoke is controlled by switches passed to it from the command line, when running in node.js, or from the URL query
-string, when running in the browser. Each switch has the form
-```
---<long-switch-name>=<value>
-```
-or
-```
--<short-switch-name>=<value>
-```
-We've already seen the `-p` switch, which is the short name for the `--profile` switch. The profile switch says which
-files to load and execute. Multiple profiles may be specified within a single command line.
+string, when running in the browser. There are three switch forms:
 
-For large tests, a file loaded by the profile switch will itself go on to load several other files. Take a look at `all.js `
+1. ```<switch-name>=<value>```
+2. ```<switch-name>```
+3. ```!<switch-name>```
+
+```<switch-name>``` may be preceded with any number of dashes.
+
+Then second form sets the switch to a value of `true`; the third form sets the switch value to ```false```.
+
+We've already seen the `-l` switch, which is the short name for the `-load` switch. The load switch says which
+files to load and execute. Multiple files may be specified within a single command line.
+
+For large tests, a file loaded by the load switch will itself go on to load several other files. Take a look at `all.js `
 in the test directory for an example.
 
-If an AMD loader is present, profile arguments without a file type are assumed to be AMD modules. If the profile argument
-has a file type, then it is loaded outside the context of the AMD loader.
+If an AMD loader is present, load arguments without a file type are assumed to be AMD modules. If the load argument
+has a file type, then it is loaded outside the context of the AMD loader. If a load argument has the file type ```.es6.js``` then it is loaded as an ES6 module.
 
 The `--package=<package name>:<package location>:<package main>` causes the implied package config to be sent to the AMD
 loader *before* any AMD modules are attempted to be loaded. `:<package main>` is optional.
+
+
+
+The ```root``` switch sets the base path for any relative paths given by the load switch.
+
+smoke includes the ability to execute and control tests on remote browsers--either on the local machine or across the network. ```smoke.options.capabilities``` gives the driver information needed to set up a particular remote target. ```smoke.options.capabilities``` should be initialized by using the load option to load a resource that initializes ```smoke.options.capabilities```. See smoke.config.js and test/capabilities.js in the smoke project directory for an example.
+
+If you are running tests on a remote service (e.g., Testing Bot), you will likely need to set environment variables the give you keys/secrets as required by the remote service.
+
+```-cap=<capability>``` causes the remote test to be run on the capability given by ```smoke.config.capabilities[<capability>]```. See test/capabilities.js for examples of capabilities.
+
+```-capPreset=<capPreset>``` causes the remote test to be run on with all capabilities given by ```smoke.config.capabilities.presets[<capPreset>]```. See test/capabilities.js for examples of presets.
+
+If either of the options ```cap``` or ```capPreset``` are given, then only remote tests are executed by default.
+
+By default, smoke will automatically run all the tests defined after all resources have loaded as given by one of more load switches. You can prevent the default behavior and explicitly execute tests according to your own logic by setting the swithc ```autoRun``` to false.
 
 ## Test Hierarchies
 A test is a hierarchy (a tree) of nodes. Each node in the tree can contain either a single test of an ordered
