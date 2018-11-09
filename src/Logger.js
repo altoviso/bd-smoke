@@ -117,7 +117,7 @@ const Logger = class {
 		this._failCount++;
 		let result = this._results[id];
 		result[2] = false;
-		result[3] = error;
+		result[3] = [error.message, ...(error.stack.split("\n"))];
 		if(this._console){
 			console.log("FAIL[" + result[0] + "]");
 			this.options.consoleErrorPrinter(error);
