@@ -1833,7 +1833,7 @@ let smoke$1 = {
 		return "altoviso";
 	},
 	get version(){
-		return "1.0.1";
+		return "1.0.2";
 	},
 	isBrowser: isBrowser,
 	isNode: isNode,
