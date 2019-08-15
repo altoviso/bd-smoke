@@ -1,6 +1,6 @@
 {
 	"name": "bd-smoke",
-	"version": "1.1.0",
+	"version": "1.1.1",
 	"description": "Simple, powerful javascript test framework for node.js and the browser with NO dependencies.",
 	"homepage": "http://github.com/altoviso/bd-smoke",
 	"bugs": "http://github.com/altoviso/bd-smoke/issues",
