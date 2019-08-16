@@ -1,44 +1,34 @@
 module.exports = {
-    "env": {
-        "browser": true,
-        "es6": true,
-        "node": true
+    'env': {
+        'browser': true,
+        'es6': true,
+        'node': true
     },
-    "extends": "eslint:recommended",
-    "parserOptions": {
-        "ecmaVersion": 2017,
-        "sourceType": "module"
+
+    parserOptions: {
+        ecmaVersion: 2018,
+        sourceType: 'module'
     },
-    "rules": {
-        "indent": [
-            "error",
-            "tab",
-			{ "SwitchCase": 1 }
-        ],
-        "no-undef":["warn", { "typeof": false }],
-        "linebreak-style": [
-            "error",
-            "windows"
-        ],
-        "quotes": [
-            "error",
-            "double"
-        ],
-        "semi": [
-            "error",
-            "always"
-        ]
+
+    extends: [
+        'backdraft'
+    ],
+
+    'rules': {
+        'no-return-assign': 'off'
     },
-	"overrides": [
-		{
-			"files": ["smoke.js"],
-			"rules": {
-				"quotes": "off",
-				"indent": "off"
-			},
-			"globals": {
-				"define": true
-			}
-		}
-	]
+
+    'overrides': [
+        {
+            'files': ['smoke.config.js'],
+            'rules': {
+                'global-require': 'off'
+            }
+        }, {
+            'files': ['test/**', '*-test.es6.js', '*-test.js'],
+            'rules': {
+                'no-console': 'off'
+            }
+        }
+    ]
 };

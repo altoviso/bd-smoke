@@ -1,4 +1,4 @@
-let isBrowser = typeof window !== "undefined";
-let isNode = !isBrowser;
+const isBrowser = typeof window !== 'undefined';
+const isNode = !isBrowser;
 
 export {isBrowser, isNode};

@@ -1,0 +1,16 @@
+#!/bin/sh
+here=`dirname "$0"`
+eslint=./node_modules/.bin/eslint
+
+if [ ! -x "$here/$eslint" ]; then
+    echo >&2 "Can't find $here/eslint.  Did you install node modules?  Try:"
+    printf >&2 "    "
+    [ "$here" != . ] && printf >&2 %s "cd $(readlink -m "$here") && "
+    echo >&2 "npm run cl-install"
+    exit 1
+fi
+
+cd "$here" || exit 1
+
+[ $# -eq 0 ] && exec $eslint --help
+exec $eslint "$@"
