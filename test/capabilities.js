@@ -18,11 +18,11 @@ let testingBotServer = {
 // let userServer = 'http://localhost:4445/wd/hub';
 // let userServer = 'https://' + tbsec + ':' + tbsec + '@' + 'localhost:4445/wd/hub';
 
-function getBrowserStackCaps(os, osVersion, browser, rest) {
+function getBrowserStackCaps(os, os_version, browserName, rest) {
     return {
-        os: os,
-        os_version: osVersion,
-        browserName: browser,
+        os,
+        os_version,
+        browserName,
         'browserstack.local': 'true',
         'browserstack.selenium_version': '3.5.2',
         'browserstack.console': 'verbose',

@@ -844,8 +844,8 @@ function normalizeOptionName(name) {
 
 function getUrlArgs() {
     const urlParams = [];
-    const qString = decodeURIComponent(window.location.search.substring(1));
-    ((qString && qString.split('#')[0]) || '').split('&').forEach(arg => urlParams.push(arg.trim()));
+    const qString = decodeURIComponent(window.location.hash.substring(1)) || '';
+    qString.split('&').forEach(arg => urlParams.push(arg.trim()));
     urlParams.push(`cwd=${(window.location.origin + window.location.pathname).match(/(.+)\/[^/]+$/)[1]}`);
     return urlParams;
 }
@@ -1024,7 +1024,7 @@ function checkTest(test, logger) {
                 let result;
                 if (typeof test === 'function') {
                     // implied testId of the index
-                    result = { id: i, test };
+                    result = { id: test.name, test };
                 } else if (Array.isArray(test)) {
                     // [id, test]
                     if (typeof test[0] === 'function') {
@@ -1848,7 +1848,7 @@ const smoke$1 = {
         return 'altoviso';
     },
     get version() {
-        return '1.1.0';
+        return '1.2.0';
     },
     isBrowser,
     isNode,
@@ -1976,7 +1976,8 @@ const smoke$1 = {
 
     checkConfig(options) {
         options = { ...options || smoke$1.options };
-        options.capabilities = getCapabilities(options.capabilities, options.provider, options.cap, options.capPreset, smoke$1.logger)[0];
+        options.capabilities =
+            getCapabilities(options.capabilities, options.provider, options.cap, options.capPreset, smoke$1.logger)[0];
         options.load = [];
         for (const control of LoadControl.injections.values()) {
             options.load.push(
@@ -2026,7 +2027,13 @@ const smoke$1 = {
     run(testInstruction, logger, options, remote, resetLog) {
         // autoRun is canceled after the first run (prevents running twice when user configs call runDefault explicitly)
         smoke$1.options.autoRun = false;
-        return run(smokeTests, testInstruction, logger || options.logger || smoke$1.logger, options || smoke$1.options, remote, resetLog);
+        return run(
+            smokeTests,
+            testInstruction,
+            logger || options.logger || smoke$1.logger,
+            options || smoke$1.options,
+            remote, resetLog
+        );
     },
 
     runDefault() {
@@ -2081,7 +2088,10 @@ async function defaultStart() {
                 smoke$1.logger.log('smoke:exitCode', 0, ['only printed configuration, no tests ran', 0]);
                 isNode && process.exit(0);
             } else if (result.ranRemote) {
-                const exitCode = result.remoteLogs.failCount + result.remoteLogs.scaffoldFailCount + result.localLog.failCount + result.localLog.scaffoldFailCount;
+                const exitCode = result.remoteLogs.failCount +
+                    result.remoteLogs.scaffoldFailCount +
+                    result.localLog.failCount +
+                    result.localLog.scaffoldFailCount;
                 smoke$1.logger.log('smoke:exitCode', 0, ['default tests run on remote browser(s) completed', exitCode]);
                 isNode && process.exit(exitCode);
             } else {
