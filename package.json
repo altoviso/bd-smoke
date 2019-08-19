@@ -1,41 +1,42 @@
 {
-	"name": "bd-smoke",
-	"version": "1.1.1",
-	"description": "Simple, powerful javascript test framework for node.js and the browser with NO dependencies.",
-	"homepage": "http://github.com/altoviso/bd-smoke",
-	"bugs": "http://github.com/altoviso/bd-smoke/issues",
-	"main": "./smoke.js",
-	"directories": {
-		"test": "test"
-	},
-	"devDependencies": {
-		"eslint": "^6.1.0",
-		"grunt": "^1.0.4",
-		"grunt-cli": "^1.3.2",
-		"grunt-contrib-watch": "^1.1.0",
-		"rollup": "^1.19.4",
-		"eslint-config-backdraft": "^1.0.0",
-		"eslint-plugin-import": "^2.18.2"
-	},
-	"scripts": {
-		"test": "node smoke-umd",
-		"test-minimal-example": "node smoke-umd --load=./test/minimal-example.js",
-		"build": "./node_modules/.bin/rollup -c"
-	},
-	"github": "http://github.com/altoviso/bd-smoke",
-	"repository": {
-		"type": "git",
-		"url": "git://github.com/altoviso/bd-smoke.git"
-	},
-	"keywords": [
-		"test harness",
-		"test",
-		"tester",
-		"unit test",
-		"unit testing",
-		"system test",
-		"system testing"
-	],
-	"author": "Rawld Gill <rgill@altoviso.com> (http://altoviso.com/)",
-	"license": "BSD-3-Clause"
+  "name": "bd-smoke",
+  "version": "1.1.1",
+  "description": "Simple, powerful javascript test framework for node.js and the browser with NO dependencies.",
+  "homepage": "http://github.com/altoviso/bd-smoke",
+  "bugs": "http://github.com/altoviso/bd-smoke/issues",
+  "main": "./smoke.js",
+  "directories": {
+    "test": "test"
+  },
+  "devDependencies": {
+    "eslint": "^6.1.0",
+    "grunt": "^1.0.4",
+    "grunt-cli": "^1.3.2",
+    "grunt-contrib-watch": "^1.1.0",
+    "rollup": "^1.19.4",
+    "eslint-config-backdraft": "^1.0.0",
+    "eslint-plugin-import": "^2.18.2"
+  },
+  "scripts": {
+    "test": "node smoke-umd",
+    "test-minimal-example-1": "node smoke-umd --load=./test/minimal-example.js",
+    "test-minimal-example-2": "npm run test -- -include=minimal-example",
+    "build": "./node_modules/.bin/rollup -c"
+  },
+  "github": "http://github.com/altoviso/bd-smoke",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/altoviso/bd-smoke.git"
+  },
+  "keywords": [
+    "test harness",
+    "test",
+    "tester",
+    "unit test",
+    "unit testing",
+    "system test",
+    "system testing"
+  ],
+  "author": "Rawld Gill <rgill@altoviso.com> (http://altoviso.com/)",
+  "license": "BSD-3-Clause"
 }
