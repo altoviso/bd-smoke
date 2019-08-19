@@ -312,7 +312,7 @@ async function runRemote(testList, logger, options, capabilities) {
     //         if test.type===remote
     //              call smoke.run, pass driver to test
     const remoteLogs = [];
-    // eslint-disable-next-line global-require
+    // eslint-disable-next-line global-require,import/no-unresolved
     const { Builder } = require('selenium-webdriver');
     while (capabilities.length) {
         let [capName, caps] = capabilities.pop();

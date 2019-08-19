@@ -172,7 +172,7 @@ export default function getLoadControlClass(log, onResourceLoadComplete, onLoadi
         static loadNodeModule(moduleName) {
             return LoadControl.load(moduleName, 'node module', (control, fileName) => {
                 try {
-                    // eslint-disable-next-line global-require
+                    // eslint-disable-next-line global-require,import/no-dynamic-require
                     require((control.loadedName = fileName));
                     control.resolve(true);
                 } catch (e) {
@@ -184,6 +184,7 @@ export default function getLoadControlClass(log, onResourceLoadComplete, onLoadi
         static loadAmdModule(moduleName) {
             return LoadControl.load(moduleName, 'script', (control, module) => {
                 try {
+                    // eslint-disable-next-line global-require,import/no-dynamic-require
                     require([module], () => {
                         control.resolve(true);
                     });

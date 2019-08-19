@@ -22,12 +22,14 @@ module.exports = {
         {
             'files': ['smoke.config.js'],
             'rules': {
-                'global-require': 'off'
+                'global-require': 'off',
+                'func-names': 'off'
             }
         }, {
-            'files': ['test/**', '*-test.es6.js', '*-test.js'],
+            'files': ['test/**'],
             'rules': {
-                'no-console': 'off'
+                'no-console': 'off',
+                'global-require': 'off',
             }
         }
     ]

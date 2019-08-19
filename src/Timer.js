@@ -1,4 +1,4 @@
-const Timer = (function () {
+function getTimerClass() {
     if (typeof window !== 'undefined') {
         if (window.performance) {
             return class {
@@ -60,7 +60,8 @@ const Timer = (function () {
             }
         };
     }
-}());
+}
 
+const Timer = getTimerClass();
 
 export default Timer;

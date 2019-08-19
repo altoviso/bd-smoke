@@ -1,3 +1,5 @@
+/* globals define */
+
 (function (factory) {
     if (typeof window !== 'undefined') {
         if (window.smoke) {

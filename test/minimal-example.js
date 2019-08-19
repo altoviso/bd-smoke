@@ -1,3 +1,5 @@
+/* globals define */
+
 (function (factory) {
     if (typeof window !== 'undefined') {
         if (window.smoke) {
@@ -7,6 +9,7 @@
         }
         if (window.define) {
             // using an AMD loader; smoke must be a module in that loaders module space
+            // eslint-disable-next-line no-undef
             define(['smoke'], factory);
             return;
         }

@@ -26,10 +26,10 @@ function getUrlArgs() {
 }
 
 function argsToOptions(args, _normalizeOptionName) {
-    // args is an array of strings...usually either the command line args (node) or a lightly processed query string (browser)
-    // transform options into key-> value | [values] for options of the form "key=value" and key->true for options of the form "key"
-    // for any value of the form "<value>" or '<value>', remove the surrounding quotes
-    // make sure everything is trimmed up
+    // args is an array of strings...usually either the command line args (node) or a lightly processed
+    // hash string (browser) transform options into key-> value | [values] for options of the form "key=value"
+    // and key->true for options of the form "key" for any value of the form "<value>" or '<value>', remove
+    // the surrounding quotes make sure everything is trimmed up
 
     const normalizeName = _normalizeOptionName ? name => (normalizeOptionName(_normalizeOptionName(name))) : normalizeOptionName;
 
