@@ -1,7 +1,7 @@
 const isBrowser = typeof window !== 'undefined';
 const isNode = !isBrowser;
 
-const Timer = (function () {
+function getTimerClass() {
     if (typeof window !== 'undefined') {
         if (window.performance) {
             return class {
@@ -63,7 +63,9 @@ const Timer = (function () {
             }
         };
     }
-}());
+}
+
+const Timer = getTimerClass();
 
 /* eslint-disable no-console */
 
@@ -505,7 +507,7 @@ function getLoadControlClass(log, onResourceLoadComplete, onLoadingComplete) {
         static loadNodeModule(moduleName) {
             return LoadControl.load(moduleName, 'node module', (control, fileName) => {
                 try {
-                    // eslint-disable-next-line global-require
+                    // eslint-disable-next-line global-require,import/no-dynamic-require
                     require((control.loadedName = fileName));
                     control.resolve(true);
                 } catch (e) {
@@ -517,6 +519,7 @@ function getLoadControlClass(log, onResourceLoadComplete, onLoadingComplete) {
         static loadAmdModule(moduleName) {
             return LoadControl.load(moduleName, 'script', (control, module) => {
                 try {
+                    // eslint-disable-next-line global-require,import/no-dynamic-require
                     require([module], () => {
                         control.resolve(true);
                     });
@@ -851,10 +854,10 @@ function getUrlArgs() {
 }
 
 function argsToOptions(args, _normalizeOptionName) {
-    // args is an array of strings...usually either the command line args (node) or a lightly processed query string (browser)
-    // transform options into key-> value | [values] for options of the form "key=value" and key->true for options of the form "key"
-    // for any value of the form "<value>" or '<value>', remove the surrounding quotes
-    // make sure everything is trimmed up
+    // args is an array of strings...usually either the command line args (node) or a lightly processed
+    // hash string (browser) transform options into key-> value | [values] for options of the form "key=value"
+    // and key->true for options of the form "key" for any value of the form "<value>" or '<value>', remove
+    // the surrounding quotes make sure everything is trimmed up
 
     const normalizeName = _normalizeOptionName ? name => (normalizeOptionName(_normalizeOptionName(name))) : normalizeOptionName;
 
@@ -1658,7 +1661,7 @@ async function runRemote(testList, logger, options, capabilities) {
     //         if test.type===remote
     //              call smoke.run, pass driver to test
     const remoteLogs = [];
-    // eslint-disable-next-line global-require
+    // eslint-disable-next-line global-require,import/no-unresolved
     const { Builder } = require('selenium-webdriver');
     while (capabilities.length) {
         let [capName, caps] = capabilities.pop();
