@@ -19,8 +19,8 @@ function normalizeOptionName(name) {
 
 function getUrlArgs() {
     const urlParams = [];
-    const qString = decodeURIComponent(window.location.search.substring(1));
-    ((qString && qString.split('#')[0]) || '').split('&').forEach(arg => urlParams.push(arg.trim()));
+    const qString = decodeURIComponent(window.location.hash.substring(1)) || '';
+    qString.split('&').forEach(arg => urlParams.push(arg.trim()));
     urlParams.push(`cwd=${(window.location.origin + window.location.pathname).match(/(.+)\/[^/]+$/)[1]}`);
     return urlParams;
 }
