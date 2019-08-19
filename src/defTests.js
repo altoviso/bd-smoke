@@ -52,7 +52,7 @@ function checkTest(test, logger) {
                 let result;
                 if (typeof test === 'function') {
                     // implied testId of the index
-                    result = { id: i, test };
+                    result = { id: test.name, test };
                 } else if (Array.isArray(test)) {
                     // [id, test]
                     if (typeof test[0] === 'function') {
