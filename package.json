@@ -8,9 +8,6 @@
 	"directories": {
 		"test": "test"
 	},
-	"dependencies": {
-		"eslint-plugin-import": "^2.18.2"
-	},
 	"devDependencies": {
 		"eslint": "^6.1.0",
 		"grunt": "^1.0.4",
