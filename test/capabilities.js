@@ -1,15 +1,15 @@
 let smokeOrder = 1;
 
-let browserStackUser = process.env.BROWSER_STACK_USER || false;
-let browserStackKey = process.env.BROWSER_STACK_KEY || false;
-let browserStackServer = {
+const browserStackUser = process.env.BROWSER_STACK_USER || false;
+const browserStackKey = process.env.BROWSER_STACK_KEY || false;
+const browserStackServer = {
     provider: 'browserstack',
     url: 'http://hub-cloud.browserstack.com/wd/hub'
 };
 
-let testingBotKey = process.env.TESTINGBOT_KEY || false;
-let testingBotSecret = process.env.TESTINGBOT_SECRET || false;
-let testingBotServer = {
+const testingBotKey = process.env.TESTINGBOT_KEY || false;
+const testingBotSecret = process.env.TESTINGBOT_SECRET || false;
+const testingBotServer = {
     name: 'testingbot',
     url: 'http://localhost:4445/wd/hub'
 };
@@ -18,6 +18,7 @@ let testingBotServer = {
 // let userServer = 'http://localhost:4445/wd/hub';
 // let userServer = 'https://' + tbsec + ':' + tbsec + '@' + 'localhost:4445/wd/hub';
 
+// eslint-disable-next-line camelcase
 function getBrowserStackCaps(os, os_version, browserName, rest) {
     return {
         os,
@@ -35,18 +36,17 @@ function getBrowserStackCaps(os, os_version, browserName, rest) {
 }
 
 function getTestingBotCaps(platform, browserName, version, rest) {
-    return Object.assign(
-        {
-            'selenium-version': '3.14.0',
-            client_key: testingBotKey,
-            client_secret: testingBotSecret,
-            platform: platform,
-            browserName: browserName,
-            version: version,
-            provider: testingBotServer,
-            smokeOrder: smokeOrder++
-        }, rest
-    );
+    return {
+        'selenium-version': '3.14.0',
+        client_key: testingBotKey,
+        client_secret: testingBotSecret,
+        platform,
+        browserName,
+        version,
+        provider: testingBotServer,
+        smokeOrder: smokeOrder++,
+        ...rest
+    };
 }
 
 const caps = {
@@ -60,14 +60,14 @@ const caps = {
     },
     tbchrome: getTestingBotCaps('WIN10', 'chrome', '68'),
     tbfirefox: getTestingBotCaps('WIN10', 'firefox', '61'),
-    ipad: getBrowserStackCaps(undefined, '11.3', 'iPad', { 'device': 'iPad 6th', 'realMobile': 'true' })
+    ipad: getBrowserStackCaps(undefined, '11.3', 'iPad', { device: 'iPad 6th', realMobile: 'true' })
 };
 
 ['10', '8.1', '7'].forEach(version => {
     ['Chrome', 'Firefox', 'Edge', 'IE'].forEach(browser => {
         if (browser !== 'Edge' || version === '10') {
-            let cap = getBrowserStackCaps('Windows', version, browser);
-            caps[(browser + '-win-' + version).toLowerCase()] = cap;
+            const cap = getBrowserStackCaps('Windows', version, browser);
+            caps[(`${browser}-win-${version}`).toLowerCase()] = cap;
             if (browser === 'Firefox') {
                 cap.browser_version = '62.0 beta';
             }
@@ -77,7 +77,7 @@ const caps = {
 
 ['High Sierra', 'Sierra'].forEach(version => {
     ['Safari', 'Chrome', 'Firefox'].forEach(browser => {
-        caps[(browser + '-osx-' + version.replace(/\s/g, '-')).toLowerCase().replace(' ')] = getBrowserStackCaps('OS X', version, browser);
+        caps[(`${browser}-osx-${version.replace(/\s/g, '-')}`).toLowerCase().replace(' ')] = getBrowserStackCaps('OS X', version, browser);
     });
 });
 

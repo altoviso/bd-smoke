@@ -1,4 +1,4 @@
-((function () {
+(function () {
     let load = [
         './test/minimal-example.js',
         './test/traverse-example.js'
@@ -15,7 +15,7 @@
     if (typeof window !== 'undefined') {
         if (window.require) {
             // AMD
-            load = load.map(m => m.replace(/^\./, "smoke").replace(/\.js$/, ''));
+            load = load.map(m => m.replace(/^\./, 'smoke').replace(/\.js$/, ''));
             window.require(['smoke'], doConfig);
         } else {
             // global smoke
@@ -25,4 +25,4 @@
         // on node
         doConfig(require('./smoke-umd.js'));
     }
-})());
+}());
