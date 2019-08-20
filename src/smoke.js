@@ -9,6 +9,7 @@ import {getUrlArgs, argsToOptions, processOptions} from './config.js';
 import testTypes from './testTypes.js';
 import {defTest, orderTests} from './defTests.js';
 import {queueActions, getQueuedActions, run, runDefault, getCapabilities} from './runners.js';
+import {capabilities} from './capabilities.js';
 
 const defaultOptions = {
     nameSeparator: '/',
@@ -19,6 +20,7 @@ const defaultOptions = {
     autoRun: true,
     load: [],
     provider: false,
+    capabilities: capabilities,
     cap: [],
     capPreset: [],
     user: {}
