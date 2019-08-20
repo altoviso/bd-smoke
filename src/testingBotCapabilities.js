@@ -190,4 +190,4 @@ const testingBotCapabilities = {
     "Pixel C": { "ANDROID": { "Chrome": [["8.0", "Android"]] } }
 };
 
-export {testingBotCapabilities};
+module.exports = testingBotCapabilities;

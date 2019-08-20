@@ -1,4 +1,4 @@
-import {testingBotCapabilities} from './testingBotCapabilities.js';
+const testingBotCapabilities = require('./testingBotCapabilities.js');
 
 let smokeOrder = 1;
 
@@ -151,4 +151,4 @@ capabilities.presets = {
 
 capabilities.testingBotCapabilities = testingBotCapabilities;
 
-export {capabilities};
+module.exports = capabilities;
