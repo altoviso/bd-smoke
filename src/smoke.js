@@ -72,7 +72,7 @@ const smoke = {
         return 'altoviso';
     },
     get version() {
-        return '1.2.1';
+        return '1.2.2';
     },
     isBrowser,
     isNode,
