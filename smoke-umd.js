@@ -1,8 +1,8 @@
 (function (global, factory) {
-    typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
-    typeof define === 'function' && define.amd ? define(factory) :
-    (global = global || self, global.smoke = factory());
-}(this, function () { 'use strict';
+    typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
+    typeof define === 'function' && define.amd ? define(['exports'], factory) :
+    (global = global || self, factory(global.smoke = {}));
+}(this, function (exports) { 'use strict';
 
     const isBrowser = typeof window !== 'undefined';
     const isNode = !isBrowser;
@@ -2125,6 +2125,8 @@
 
     smoke$1.isUMD = true;
 
-    return smoke$1;
+    exports.smoke = smoke$1;
+
+    Object.defineProperty(exports, '__esModule', { value: true });
 
 }));

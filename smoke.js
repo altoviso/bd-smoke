@@ -2115,4 +2115,4 @@ async function defaultStart() {
 // and other modules may have to be loaded before that module
 smoke$1.pause(10).then(defaultStart);
 
-export default smoke$1;
+export { smoke$1 as smoke };

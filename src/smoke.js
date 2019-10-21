@@ -72,7 +72,7 @@ const smoke = {
         return 'altoviso';
     },
     get version() {
-        return '1.3.0';
+        return '1.4.0';
     },
     isBrowser,
     isNode,
@@ -335,4 +335,4 @@ async function defaultStart() {
 // and other modules may have to be loaded before that module
 smoke.pause(10).then(defaultStart);
 
-export default smoke;
+export {smoke};
