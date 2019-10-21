@@ -16,7 +16,7 @@ const defaultOptions = {
     include: [],
     logExcludes: true,
     concurrent: false,
-    autoRun: true,
+    autoRun: false,
     load: [],
     provider: false,
     capabilities: isNode ? require(`${__dirname}/src/capabilities.js`) : {},
@@ -72,7 +72,7 @@ const smoke = {
         return 'altoviso';
     },
     get version() {
-        return '1.2.2';
+        return '1.3.0';
     },
     isBrowser,
     isNode,
