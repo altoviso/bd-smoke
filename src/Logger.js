@@ -17,7 +17,16 @@ const Logger = class {
     reset(options) {
         const result = this.getResults();
         this.options = { ...this.options, ...options };
-        this._console = !!this.options.console;
+        if (this.options.console && typeof this.options.console !== 'object') {
+            this.options.console = console;
+        }
+        if (!this.options.console) {
+            this.options.console = {
+                log() {
+                    // no-op
+                }
+            };
+        }
         this._idSeed = 0;
         this._unexpected = false;
         this._totalCount = 0;
@@ -31,7 +40,6 @@ const Logger = class {
 
     updateOptions(options) {
         this.options = { ...this.options, ...options };
-        this._console = !!this.options.console;
     }
 
     getResults() {
@@ -108,9 +116,7 @@ const Logger = class {
         this._passCount++;
         const result = this._results[id];
         result[2] = result[2].time;
-        if (this._console) {
-            console.log(`PASS[${result[0]}]`);
-        }
+        this.options.console.log(`PASS[${result[0]}]`);
     }
 
     failTest(id, error) {
@@ -118,10 +124,8 @@ const Logger = class {
         const result = this._results[id];
         result[2] = false;
         result[3] = [error.message, ...(error.stack.split('\n'))];
-        if (this._console) {
-            console.log(`FAIL[${result[0]}]`);
-            this.options.consoleErrorPrinter(error);
-        }
+        this.options.console.log(`FAIL[${result[0]}]`);
+        this.options.consoleErrorPrinter(error);
     }
 
     excludeTest(context) {
@@ -135,17 +139,13 @@ const Logger = class {
         this._scaffoldFailCount++;
         const scaffoldName = this.getScaffoldName(context, node);
         this.log('SCAFFOLD FAIL', 0, [`${scaffoldName}:${phaseText}`, error], true);
-        if (this._console) {
-            console.log(`SCAFFOLD FAIL[${scaffoldName}:${phaseText}]`);
-            this.options.consoleErrorPrinter(error);
-        }
+        this.options.console.log(`SCAFFOLD FAIL[${scaffoldName}:${phaseText}]`);
+        this.options.consoleErrorPrinter(error);
     }
 
     logNote(note, noConsole) {
         this.log('note', 0, [note], true);
-        if (this._console && !noConsole) {
-            console.log(`NOTE: ${note}`);
-        }
+        !noConsole && this.options.console.log(`NOTE: ${note}`);
     }
 
     log(id, testId, entry, noConsole) {
@@ -183,13 +183,13 @@ const Logger = class {
             this._failCount++;
         }
         (this._logs[id] || (this._logs[id] = [])).push(entry);
-        if (this._console && !noConsole) {
+        if (!noConsole) {
             if (Array.isArray(entry)) {
-                console.log(`LOG[${id}]`);
-                entry.forEach(item => console.log(item));
-                console.log('.');
+                this.options.console.log(`LOG[${id}]`);
+                entry.forEach(item => this.options.console.log(item));
+                this.options.console.log('.');
             } else {
-                console.log(`LOG[${id}]`, entry);
+                this.options.console.log(`LOG[${id}]`, entry);
             }
         }
         return id;
