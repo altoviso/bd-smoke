@@ -31,6 +31,17 @@ export default function getLoadControlClass(log, onResourceLoadComplete, onLoadi
             return !!this.loadedName;
         }
 
+        get injectRelativePrefix() {
+            return LoadControl.injectRelativePrefix;
+        }
+
+        set injectRelativePrefix(injectRelativePrefix) {
+            if (injectRelativePrefix !== LoadControl.injectRelativePrefix) {
+                LoadControl.injectRelativePrefix = injectRelativePrefix;
+                log(`root directory for relative injection paths: '${LoadControl.injectRelativePrefix}'`);
+            }
+        }
+
         resolve(resolution, errorInfo) {
             if (this.promise.resolved) {
                 // eslint-disable-next-line no-console
