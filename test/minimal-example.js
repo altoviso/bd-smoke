@@ -7,7 +7,7 @@
             factory(window.smoke);
             return;
         }
-        if (window.define) {
+        if (window.define && window.define.amd) {
             // using an AMD loader; smoke must be a module in that loaders module space
             // eslint-disable-next-line no-undef
             define(['smoke'], factory);
