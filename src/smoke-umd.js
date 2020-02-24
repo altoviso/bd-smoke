@@ -3,4 +3,4 @@
 import {smoke} from './smoke.js';
 
 smoke.isUMD = true;
-export {smoke};
+export {smoke as default};
