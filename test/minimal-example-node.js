@@ -1,4 +1,4 @@
-import {smoke} from '../smoke.js';
+const smoke = require('../smoke-umd.js');
 
 const assert = smoke.assert;
 

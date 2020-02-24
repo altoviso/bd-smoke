@@ -30,7 +30,9 @@
 			{name: "smoke", location: ".", main: "smoke-umd"},
 		]
 	});
-	require(["smoke"]);
+	require(["smoke"], function(smoke){
+        smoke.defaultStart(smoke.configureBrowser({ autoRun: true }));
+    });
 </script>
 </body>
 </html>

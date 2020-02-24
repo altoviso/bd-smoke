@@ -1,4 +1,4 @@
-import {smoke} from '../smoke.js';
+const smoke = window.smoke;
 
 const assert = smoke.assert;
 

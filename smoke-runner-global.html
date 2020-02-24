@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Smoke Browser Runner</title>
+    <style type="text/css">
+        #bd-smoke, #bd-smoke-results {
+            font-family: sans-serif;
+            margin: 1em;
+        }
+    </style>
+</head>
+<body>
+<div id="bd-smoke">
+    <h3>Smoke - the Backdraft test harness by <a href="http://www.altoviso.com">Altoviso</a></h3>
+    <p>non-AMD browser runner; open the console to see detailed results</p>
+    <div id="bd-smoke-results">
+        <!--default place for smoke to write results-->
+    </div>
+</div>
+
+
+<!--tests can hang stuff off of root-->
+<div id="bd-smoke-root"></div>
+<script src="./smoke-umd.js"></script>
+<script>
+    (function () {
+        smoke.defaultStart(smoke.configureBrowser({ autoRun: true }));
+    })();
+</script>
+</body>
+</html>

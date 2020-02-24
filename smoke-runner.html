@@ -13,7 +13,7 @@
 <body>
 <div id="bd-smoke">
     <h3>Smoke - the Backdraft test harness by <a href="http://www.altoviso.com">Altoviso</a></h3>
-    <p>non-AMD browser runner; open the console to see detailed results</p>
+    <p>browser runner, smoke loaded as an es module (open the console to see detailed results)</p>
     <div id="bd-smoke-results">
         <!--default place for smoke to write results-->
     </div>
@@ -22,6 +22,9 @@
 
 <!--tests can hang stuff off of root-->
 <div id="bd-smoke-root"></div>
-<script src="./smoke-umd.js"></script>
+<script type="module">
+    import {smoke} from "./smoke.js";
+    smoke.defaultStart(smoke.configureBrowser({ autoRun: true }));
+</script>
 </body>
 </html>
