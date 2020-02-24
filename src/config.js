@@ -17,9 +17,10 @@ function normalizeOptionName(name) {
     }
 }
 
-function getUrlArgs() {
+function getUrlArgs(useHash) {
     const urlParams = [];
-    const qString = decodeURIComponent(window.location.hash.substring(1)) || '';
+    const location = window.location;
+    const qString = decodeURIComponent(useHash ? location.hash.substring(1) : location.search.substring(1)) || '';
     qString.split('&').forEach(arg => urlParams.push(arg.trim()));
     urlParams.push(`cwd=${(window.location.origin + window.location.pathname).match(/(.+)\/[^/]+$/)[1]}`);
     return urlParams;
