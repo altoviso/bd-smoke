@@ -183,6 +183,11 @@ export default function getLoadControlClass(log, onResourceLoadComplete, onLoadi
         static loadNodeModule(moduleName) {
             return LoadControl.load(moduleName, 'node module', (control, fileName) => {
                 try {
+                    // load relative to injectRelativePrefix unless absolute since the directory
+                    // this file resides in is meaningless to clients
+                    if (!/^\//.test(fileName)) {
+                        fileName = `${LoadControl.injectRelativePrefix}./${fileName}`;
+                    }
                     // eslint-disable-next-line global-require,import/no-dynamic-require
                     require((control.loadedName = fileName));
                     control.resolve(true);
