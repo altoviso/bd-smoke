@@ -66,6 +66,15 @@ async function loaderIdle() {
     return LoadControl.loadingError;
 }
 
+function processArgs(defaults, args) {
+    const options = smoke.argsToOptions(args);
+    Object.keys(defaults).forEach(k => {
+        if (options[k] === undefined) {
+            options[k] = defaults[k];
+        }
+    });
+    return options;
+}
 
 const smoke = {
     get oem() {
@@ -160,13 +169,35 @@ const smoke = {
     getUrlArgs,
     processOptions,
 
-    configureBrowser() {
-        return smoke.configure(smoke.getUrlArgs());
+    configureBrowser(defaults) {
+        defaults = defaults || {};
+        if (!defaults.root && /\/node_modules\/bd-smoke\/$/.test(window.location.pathname)) {
+            // set the root directory to the project root if running from node_modules
+            defaults.root = window.location.pathname.replace(/^(.+)\/node_modules\/bd-smoke\/(.+)$/, '$1/');
+        }
+        return smoke.configure(processArgs(defaults, smoke.getUrlArgs()));
     },
 
-    configure(argsOrOptions, dest) {
-        const options = Array.isArray(argsOrOptions) ? smoke.argsToOptions(argsOrOptions) : argsOrOptions;
+    configureNode(defaults) {
+        defaults = defaults || {};
+        const smokeFilespec = process.argv[1];
+        if (!defaults.root) {
+            if (/\/node_modules\/bd-smoke\/$/.test(smokeFilespec)) {
+                // set the root directory to the project root if running from node_modules
+                defaults.root = smokeFilespec.replace(/^(.+)\/node_modules\/bd-smoke\/(.+)$/, '$1/');
+            } else {
+                defaults.root = process.cwd();
+            }
+        }
+        return smoke.configure(processArgs(defaults, process.argv.slice(2)));
+    },
+
+    configure(options, dest) {
         dest = dest || smoke.options;
+        if (options.root) {
+            const root = options.root;
+            LoadControl.injectRelativePrefix = /\/$/.test(root) ? root : `${root}/`;
+        }
         smoke.processOptions(options, dest);
         if (dest === smoke.options) {
             if (smoke.options.remotelyControlled) {
@@ -181,8 +212,8 @@ const smoke = {
                 } else {
                     smoke.injectCss(resource);
                 }
-            } else if (smoke.isAmd && !/\.[^./]+$/.test(resource)) {
-                // assume resource is an AMD module if an AMD loader is present and resource does not have a file type
+            } else if (smoke.isAmd && !/\.js$/.test(resource)) {
+                // assume resource is an AMD module if an AMD loader is present and resource does not have a .js file type
                 smoke.loadAmdModule(resource);
             } else if (isNode) {
                 if (/\.es6\.js$/.test(resource)) {
@@ -270,69 +301,40 @@ const smoke = {
             smoke.options.autoRun = false;
             return runDefault(smokeTests, smoke.options, smoke.options.logger || smoke.logger);
         }
-    }
+    },
 
-};
-
-
-async function defaultStart() {
-    if (!smoke.options.autoRun) {
-        return;
-    }
-
-    const options = smoke.argsToOptions(isNode ? process.argv.slice(2) : smoke.getUrlArgs());
-
-    // set LoadControl.injectRelativePrefix...
-    if (options.root) {
-        const root = options.root;
-        LoadControl.injectRelativePrefix = /\/$/.test(root) ? root : `${root}/`;
-    } else if (isBrowser) {
-        if (/\/node_modules\/bd-smoke\/browser-runner(-amd)?\.html$/.test(window.location.pathname)) {
-            LoadControl.injectRelativePrefix = options.root = '../../';
-        } else {
-            smoke.logger.log('smoke:info', 0, ['smoke not being run by the default runner; therefore no idea how to set root; suggest you set it explicitly']);
+    async defaultStart(configPromise) {
+        if (configPromise) {
+            await configPromise;
         }
-    } else {
-        LoadControl.injectRelativePrefix = options.root = `${process.cwd()}/`;
-    }
-    smoke.logger.log('smoke:info', 0, [`root directory for relative injection paths:${LoadControl.injectRelativePrefix}`]);
+        if (!smoke.loadedResourcesCount) {
+            await smoke.configure({ load: './smoke.config.js' });
+        }
 
-    await smoke.configure(options);
-    if (!smoke.loadedResourcesCount) {
-        await smoke.configure({ load: `./smoke.config.${smoke.isUMD || smoke.isGlobal ? 'js' : 'es6.js'}` });
-    }
-
-    // wait until nothing was loaded for 20ms; this gives loaded files a chance to use autoRun
-    // as they see fit...for example, loading "A" may cause loading "B" if autoRun is true (as so forth)
-    // loaded files can set autoRun to false to prevent the behavior below
-    const loadError = await loaderIdle();
-    if (!loadError) {
-        if (!smoke.loadingError && smoke.options.autoRun && !smoke.options.remotelyControlled) {
-            const result = await smoke.runDefault();
-            if (smoke.options.checkConfig) {
-                smoke.logger.log('smoke:exitCode', 0, ['only printed configuration, no tests ran', 0]);
-                isNode && process.exit(0);
-            } else if (result.ranRemote) {
-                const exitCode = result.remoteLogs.failCount +
-                    result.remoteLogs.scaffoldFailCount +
-                    result.localLog.failCount +
-                    result.localLog.scaffoldFailCount;
-                smoke.logger.log('smoke:exitCode', 0, ['default tests run on remote browser(s) completed', exitCode]);
-                isNode && process.exit(exitCode);
-            } else {
-                const exitCode = result.localLog.failCount + result.localLog.scaffoldFailCount;
-                smoke.logger.log('smoke:exitCode', 0, ['default tests run locally completed', exitCode]);
-                isNode && process.exit(exitCode);
+        const loadError = await loaderIdle();
+        if (!loadError) {
+            if (!smoke.loadingError && smoke.options.autoRun && !smoke.options.remotelyControlled) {
+                const result = await smoke.runDefault();
+                if (smoke.options.checkConfig) {
+                    smoke.logger.log('smoke:exitCode', 0, ['only printed configuration, no tests ran', 0]);
+                    isNode && process.exit(0);
+                } else if (result.ranRemote) {
+                    const exitCode = result.remoteLogs.failCount +
+                        result.remoteLogs.scaffoldFailCount +
+                        result.localLog.failCount +
+                        result.localLog.scaffoldFailCount;
+                    smoke.logger.log('smoke:exitCode', 0, ['default tests run on remote browser(s) completed', exitCode]);
+                    isNode && process.exit(exitCode);
+                } else {
+                    const exitCode = result.localLog.failCount + result.localLog.scaffoldFailCount;
+                    smoke.logger.log('smoke:exitCode', 0, ['default tests run locally completed', exitCode]);
+                    isNode && process.exit(exitCode);
+                }
             }
+        } else {
+            isNode && process.exit(-1);
         }
-    } else {
-        isNode && process.exit(-1);
     }
-}
-
-// let another process that loaded smoke take over and set autoRun to false to prevent the default behavior
-// TODO: this might not work in AMD since smoke could be loaded as a dependent of the module that sets autoRun to false
-// and other modules may have to be loaded before that module
-smoke.pause(10).then(defaultStart);
+};
 
 export {smoke};
