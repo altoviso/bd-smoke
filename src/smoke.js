@@ -169,42 +169,42 @@ const smoke = {
     getUrlArgs,
     processOptions,
 
-    configureBrowser(defaults) {
+    configureBrowser(defaults, onLoad, onError) {
         defaults = defaults || {};
-        if (!defaults.root && /\/node_modules\/bd-smoke\/$/.test(window.location.pathname)) {
+        if (!defaults.root && /\/node_modules\/bd-smoke\/[^/]+\.html$/.test(window.location.pathname)) {
             // set the root directory to the project root if running from node_modules
             defaults.root = window.location.pathname.replace(/^(.+)\/node_modules\/bd-smoke\/(.+)$/, '$1/');
         }
-        return smoke.configure(processArgs(defaults, smoke.getUrlArgs()));
+        return smoke.configure(processArgs(defaults, smoke.getUrlArgs()), onLoad, onError);
     },
 
-    configureNode(defaults) {
+    configureNode(defaults, onLoad, onError) {
         defaults = defaults || {};
         const smokeFilespec = process.argv[1];
         if (!defaults.root) {
-            if (/\/node_modules\/bd-smoke\/$/.test(smokeFilespec)) {
+            if (/\/node_modules\/bd-smoke\//.test(smokeFilespec)) {
                 // set the root directory to the project root if running from node_modules
-                defaults.root = smokeFilespec.replace(/^(.+)\/node_modules\/bd-smoke\/(.+)$/, '$1/');
+                defaults.root = smokeFilespec.replace(/^(.+)\/node_modules\/bd-smoke\/[^/]+\.js$/, '$1/');
             } else {
                 defaults.root = process.cwd();
             }
         }
-        return smoke.configure(processArgs(defaults, process.argv.slice(2)));
+        return smoke.configure(processArgs(defaults, process.argv.slice(2)), onLoad, onError);
     },
 
-    configure(options, dest) {
-        dest = dest || smoke.options;
+    configure(options, onLoad, onError) {
+        const dest = smoke.options;
         if (options.root) {
             const root = options.root;
             LoadControl.injectRelativePrefix = /\/$/.test(root) ? root : `${root}/`;
         }
         smoke.processOptions(options, dest);
-        if (dest === smoke.options) {
-            if (smoke.options.remotelyControlled) {
-                delete smoke.options.concurrent;
-            }
-            smoke.logger.updateOptions(dest);
+        if (smoke.options.remotelyControlled) {
+            // gotta make smoke global so the remote controller can access it via an injected script
+            window.smoke = smoke;
+            delete smoke.options.concurrent;
         }
+        smoke.logger.updateOptions(dest);
         (dest.load || []).slice().forEach(resource => {
             if (/\.css/i.test(resource)) {
                 if (isNode) {
@@ -225,7 +225,10 @@ const smoke = {
                 smoke.injectScript(resource);
             }
         });
-
+        if (onLoad || onError) {
+            const noop = () => 0;
+            return smoke.loadingPromise.then(onLoad || noop, onError || noop);
+        }
         return smoke.loadingPromise;
     },
 
