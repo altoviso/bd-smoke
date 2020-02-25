@@ -231,23 +231,44 @@ async function executeTestList(testList, driver, capabilityName, logger, options
 
 function doBrowser(builder, capabilityName, testList, logger, options, remoteLogs) {
     let driver;
-    return builder.build().then(_driver => {
-        driver = _driver;
-    }).then(() => {
-        let remoteUrl = options.remoteUrl;
-        if (/\?/.test(remoteUrl)) {
-            // got a query string; make sure it has the remotelyControlled parameter
-            if (!/(\?|\s+)remotelyControlled(\$|\s+)/.test(remoteUrl)) {
-                remoteUrl += '&remotelyControlled';
+    return builder.build()
+        .then(_driver => {
+            driver = _driver;
+        })
+        .then(() => {
+            let remoteUrl = options.remoteUrl;
+            if (/\?/.test(remoteUrl)) {
+                // got a query string; make sure it has the remotelyControlled parameter
+                if (!/(\?|\s+)remotelyControlled(\$|\s+)/.test(remoteUrl)) {
+                    remoteUrl += '&remotelyControlled';
+                }
+            } else {
+                // no query string; add one
+                remoteUrl += '?remotelyControlled';
             }
-        } else {
-            // no query string; add one
-            remoteUrl += '?remotelyControlled';
-        }
-        return driver.get(remoteUrl);
-    }).then(() => {
-        return driver.executeAsyncScript(waitForLoaderIdle);
-    })
+            return driver.get(remoteUrl);
+        })
+        .then(() => {
+            return new Promise((resolve, reject) => {
+                // it is possible that smoke is not defined on the remote browser yet; give it a chance (2s) to load...
+                let retryCount = 10;
+                (function checkRemoteReady() {
+                    driver.executeAsyncScript(waitForLoaderIdle)
+                        .then(
+                            resolve
+                        )
+                        .catch(() => {
+                            if (--retryCount) {
+                                (new Promise(resolve => {
+                                    setTimeout(resolve, 20);
+                                })).then(checkRemoteReady);
+                            } else {
+                                reject();
+                            }
+                        });
+                }());
+            });
+        })
         .then(loadingError => {
             if (loadingError) {
                 logger.log('smoke:error', 0, ['remote encountered an error loading test resources']);
