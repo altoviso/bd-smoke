@@ -366,6 +366,17 @@ function getLoadControlClass(log, onResourceLoadComplete, onLoadingComplete) {
             return !!this.loadedName;
         }
 
+        get injectRelativePrefix() {
+            return LoadControl.injectRelativePrefix;
+        }
+
+        set injectRelativePrefix(injectRelativePrefix) {
+            if (injectRelativePrefix !== LoadControl.injectRelativePrefix) {
+                LoadControl.injectRelativePrefix = injectRelativePrefix;
+                log(`root directory for relative injection paths: '${LoadControl.injectRelativePrefix}'`);
+            }
+        }
+
         resolve(resolution, errorInfo) {
             if (this.promise.resolved) {
                 // eslint-disable-next-line no-console
@@ -507,6 +518,11 @@ function getLoadControlClass(log, onResourceLoadComplete, onLoadingComplete) {
         static loadNodeModule(moduleName) {
             return LoadControl.load(moduleName, 'node module', (control, fileName) => {
                 try {
+                    // load relative to injectRelativePrefix unless absolute since the directory
+                    // this file resides in is meaningless to clients
+                    if (!/^\//.test(fileName)) {
+                        fileName = `${LoadControl.injectRelativePrefix}./${fileName}`;
+                    }
                     // eslint-disable-next-line global-require,import/no-dynamic-require
                     require((control.loadedName = fileName));
                     control.resolve(true);
@@ -845,9 +861,10 @@ function normalizeOptionName(name) {
     }
 }
 
-function getUrlArgs() {
+function getUrlArgs(useHash) {
     const urlParams = [];
-    const qString = decodeURIComponent(window.location.hash.substring(1)) || '';
+    const location = window.location;
+    const qString = decodeURIComponent(useHash ? location.hash.substring(1) : location.search.substring(1)) || '';
     qString.split('&').forEach(arg => urlParams.push(arg.trim()));
     urlParams.push(`cwd=${(window.location.origin + window.location.pathname).match(/(.+)\/[^/]+$/)[1]}`);
     return urlParams;
@@ -1580,23 +1597,44 @@ async function executeTestList(testList, driver, capabilityName, logger, options
 
 function doBrowser(builder, capabilityName, testList, logger, options, remoteLogs) {
     let driver;
-    return builder.build().then(_driver => {
-        driver = _driver;
-    }).then(() => {
-        let remoteUrl = options.remoteUrl;
-        if (/\?/.test(remoteUrl)) {
-            // got a query string; make sure it has the remotelyControlled parameter
-            if (!/(\?|\s+)remotelyControlled(\$|\s+)/.test(remoteUrl)) {
-                remoteUrl += '&remotelyControlled';
+    return builder.build()
+        .then(_driver => {
+            driver = _driver;
+        })
+        .then(() => {
+            let remoteUrl = options.remoteUrl;
+            if (/\?/.test(remoteUrl)) {
+                // got a query string; make sure it has the remotelyControlled parameter
+                if (!/(\?|\s+)remotelyControlled(\$|\s+)/.test(remoteUrl)) {
+                    remoteUrl += '&remotelyControlled';
+                }
+            } else {
+                // no query string; add one
+                remoteUrl += '?remotelyControlled';
             }
-        } else {
-            // no query string; add one
-            remoteUrl += '?remotelyControlled';
-        }
-        return driver.get(remoteUrl);
-    }).then(() => {
-        return driver.executeAsyncScript(waitForLoaderIdle);
-    })
+            return driver.get(remoteUrl);
+        })
+        .then(() => {
+            return new Promise((resolve, reject) => {
+                // it is possible that smoke is not defined on the remote browser yet; give it a chance (2s) to load...
+                let retryCount = 10;
+                (function checkRemoteReady() {
+                    driver.executeAsyncScript(waitForLoaderIdle)
+                        .then(
+                            resolve
+                        )
+                        .catch(() => {
+                            if (--retryCount) {
+                                (new Promise(resolve => {
+                                    setTimeout(resolve, 20);
+                                })).then(checkRemoteReady);
+                            } else {
+                                reject();
+                            }
+                        });
+                }());
+            });
+        })
         .then(loadingError => {
             if (loadingError) {
                 logger.log('smoke:error', 0, ['remote encountered an error loading test resources']);
@@ -1846,13 +1884,22 @@ async function loaderIdle() {
     return LoadControl.loadingError;
 }
 
+function processArgs(defaults, args) {
+    const options = smoke$1.argsToOptions(args);
+    Object.keys(defaults).forEach(k => {
+        if (options[k] === undefined) {
+            options[k] = defaults[k];
+        }
+    });
+    return options;
+}
 
 const smoke$1 = {
     get oem() {
         return 'altoviso';
     },
     get version() {
-        return '1.5.0';
+        return '1.6.0';
     },
     isBrowser,
     isNode,
@@ -1940,20 +1987,42 @@ const smoke$1 = {
     getUrlArgs,
     processOptions,
 
-    configureBrowser() {
-        return smoke$1.configure(smoke$1.getUrlArgs());
+    configureBrowser(defaults, onLoad, onError) {
+        defaults = defaults || {};
+        if (!defaults.root && /\/node_modules\/bd-smoke\/[^/]+\.html$/.test(window.location.pathname)) {
+            // set the root directory to the project root if running from node_modules
+            defaults.root = window.location.pathname.replace(/^(.+)\/node_modules\/bd-smoke\/(.+)$/, '$1/');
+        }
+        return smoke$1.configure(processArgs(defaults, smoke$1.getUrlArgs()), onLoad, onError);
     },
 
-    configure(argsOrOptions, dest) {
-        const options = Array.isArray(argsOrOptions) ? smoke$1.argsToOptions(argsOrOptions) : argsOrOptions;
-        dest = dest || smoke$1.options;
-        smoke$1.processOptions(options, dest);
-        if (dest === smoke$1.options) {
-            if (smoke$1.options.remotelyControlled) {
-                delete smoke$1.options.concurrent;
+    configureNode(defaults, onLoad, onError) {
+        defaults = defaults || {};
+        const smokeFilespec = process.argv[1];
+        if (!defaults.root) {
+            if (/\/node_modules\/bd-smoke\//.test(smokeFilespec)) {
+                // set the root directory to the project root if running from node_modules
+                defaults.root = smokeFilespec.replace(/^(.+)\/node_modules\/bd-smoke\/[^/]+\.js$/, '$1/');
+            } else {
+                defaults.root = process.cwd();
             }
-            smoke$1.logger.updateOptions(dest);
         }
+        return smoke$1.configure(processArgs(defaults, process.argv.slice(2)), onLoad, onError);
+    },
+
+    configure(options, onLoad, onError) {
+        const dest = smoke$1.options;
+        if (options.root) {
+            const root = options.root;
+            LoadControl.injectRelativePrefix = /\/$/.test(root) ? root : `${root}/`;
+        }
+        smoke$1.processOptions(options, dest);
+        if (smoke$1.options.remotelyControlled) {
+            // gotta make smoke global so the remote controller can access it via an injected script
+            window.smoke = smoke$1;
+            delete smoke$1.options.concurrent;
+        }
+        smoke$1.logger.updateOptions(dest);
         (dest.load || []).slice().forEach(resource => {
             if (/\.css/i.test(resource)) {
                 if (isNode) {
@@ -1961,8 +2030,8 @@ const smoke$1 = {
                 } else {
                     smoke$1.injectCss(resource);
                 }
-            } else if (smoke$1.isAmd && !/\.[^./]+$/.test(resource)) {
-                // assume resource is an AMD module if an AMD loader is present and resource does not have a file type
+            } else if (smoke$1.isAmd && !/\.js$/.test(resource)) {
+                // assume resource is an AMD module if an AMD loader is present and resource does not have a .js file type
                 smoke$1.loadAmdModule(resource);
             } else if (isNode) {
                 if (/\.es6\.js$/.test(resource)) {
@@ -1974,7 +2043,10 @@ const smoke$1 = {
                 smoke$1.injectScript(resource);
             }
         });
-
+        if (onLoad || onError) {
+            const noop = () => 0;
+            return smoke$1.loadingPromise.then(onLoad || noop, onError || noop);
+        }
         return smoke$1.loadingPromise;
     },
 
@@ -2050,69 +2122,40 @@ const smoke$1 = {
             smoke$1.options.autoRun = false;
             return runDefault(smokeTests, smoke$1.options, smoke$1.options.logger || smoke$1.logger);
         }
-    }
+    },
 
-};
-
-
-async function defaultStart() {
-    if (!smoke$1.options.autoRun) {
-        return;
-    }
-
-    const options = smoke$1.argsToOptions(isNode ? process.argv.slice(2) : smoke$1.getUrlArgs());
-
-    // set LoadControl.injectRelativePrefix...
-    if (options.root) {
-        const root = options.root;
-        LoadControl.injectRelativePrefix = /\/$/.test(root) ? root : `${root}/`;
-    } else if (isBrowser) {
-        if (/\/node_modules\/bd-smoke\/browser-runner(-amd)?\.html$/.test(window.location.pathname)) {
-            LoadControl.injectRelativePrefix = options.root = '../../';
-        } else {
-            smoke$1.logger.log('smoke:info', 0, ['smoke not being run by the default runner; therefore no idea how to set root; suggest you set it explicitly']);
+    async defaultStart(configPromise) {
+        if (configPromise) {
+            await configPromise;
         }
-    } else {
-        LoadControl.injectRelativePrefix = options.root = `${process.cwd()}/`;
-    }
-    smoke$1.logger.log('smoke:info', 0, [`root directory for relative injection paths:${LoadControl.injectRelativePrefix}`]);
+        if (!smoke$1.loadedResourcesCount && !smokeTests.length) {
+            await smoke$1.configure({ load: './smoke.config.js' });
+        }
 
-    await smoke$1.configure(options);
-    if (!smoke$1.loadedResourcesCount) {
-        await smoke$1.configure({ load: `./smoke.config.${smoke$1.isUMD || smoke$1.isGlobal ? 'js' : 'es6.js'}` });
-    }
-
-    // wait until nothing was loaded for 20ms; this gives loaded files a chance to use autoRun
-    // as they see fit...for example, loading "A" may cause loading "B" if autoRun is true (as so forth)
-    // loaded files can set autoRun to false to prevent the behavior below
-    const loadError = await loaderIdle();
-    if (!loadError) {
-        if (!smoke$1.loadingError && smoke$1.options.autoRun && !smoke$1.options.remotelyControlled) {
-            const result = await smoke$1.runDefault();
-            if (smoke$1.options.checkConfig) {
-                smoke$1.logger.log('smoke:exitCode', 0, ['only printed configuration, no tests ran', 0]);
-                isNode && process.exit(0);
-            } else if (result.ranRemote) {
-                const exitCode = result.remoteLogs.failCount +
-                    result.remoteLogs.scaffoldFailCount +
-                    result.localLog.failCount +
-                    result.localLog.scaffoldFailCount;
-                smoke$1.logger.log('smoke:exitCode', 0, ['default tests run on remote browser(s) completed', exitCode]);
-                isNode && process.exit(exitCode);
-            } else {
-                const exitCode = result.localLog.failCount + result.localLog.scaffoldFailCount;
-                smoke$1.logger.log('smoke:exitCode', 0, ['default tests run locally completed', exitCode]);
-                isNode && process.exit(exitCode);
+        const loadError = await loaderIdle();
+        if (!loadError) {
+            if (!smoke$1.loadingError && smoke$1.options.autoRun && !smoke$1.options.remotelyControlled) {
+                const result = await smoke$1.runDefault();
+                if (smoke$1.options.checkConfig) {
+                    smoke$1.logger.log('smoke:exitCode', 0, ['only printed configuration, no tests ran', 0]);
+                    isNode && process.exit(0);
+                } else if (result.ranRemote) {
+                    const exitCode = result.remoteLogs.failCount +
+                        result.remoteLogs.scaffoldFailCount +
+                        result.localLog.failCount +
+                        result.localLog.scaffoldFailCount;
+                    smoke$1.logger.log('smoke:exitCode', 0, ['default tests run on remote browser(s) completed', exitCode]);
+                    isNode && process.exit(exitCode);
+                } else {
+                    const exitCode = result.localLog.failCount + result.localLog.scaffoldFailCount;
+                    smoke$1.logger.log('smoke:exitCode', 0, ['default tests run locally completed', exitCode]);
+                    isNode && process.exit(exitCode);
+                }
             }
+        } else {
+            isNode && process.exit(-1);
         }
-    } else {
-        isNode && process.exit(-1);
     }
-}
-
-// let another process that loaded smoke take over and set autoRun to false to prevent the default behavior
-// TODO: this might not work in AMD since smoke could be loaded as a dependent of the module that sets autoRun to false
-// and other modules may have to be loaded before that module
-smoke$1.pause(10).then(defaultStart);
+};
 
 export { smoke$1 as smoke };
