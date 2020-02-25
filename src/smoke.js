@@ -310,7 +310,7 @@ const smoke = {
         if (configPromise) {
             await configPromise;
         }
-        if (!smoke.loadedResourcesCount) {
+        if (!smoke.loadedResourcesCount && !smokeTests.length) {
             await smoke.configure({ load: './smoke.config.js' });
         }
 
