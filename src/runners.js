@@ -240,22 +240,12 @@ function doBrowser(builder, capabilityName, testList, logger, options, remoteLog
             driver = _driver;
         })
         .then(() => {
-            let remoteUrl = options.remoteUrl;
-            if (/\?/.test(remoteUrl)) {
-                // got a query string; make sure it has the remotelyControlled parameter
-                if (!/(\?|\s+)remotelyControlled(\$|\s+)/.test(remoteUrl)) {
-                    remoteUrl += '&remotelyControlled';
-                }
-            } else {
-                // no query string; add one
-                remoteUrl += '?remotelyControlled';
-            }
-            return driver.get(remoteUrl);
+            return driver.get(testList[0].remoteUrl || options.remoteUrl);
         })
         .then(() => {
             return new Promise((resolve, reject) => {
                 // it is possible that smoke is not defined on the remote browser yet; give it a chance (2s) to load...
-                let retryCount = 10;
+                let retryCount = 50;
                 (function checkRemoteReady() {
                     driver.executeAsyncScript(waitForLoaderIdle)
                         .then(
