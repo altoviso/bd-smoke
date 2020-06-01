@@ -177,7 +177,7 @@ function execute(test, logger, options, driver) {
     }
 
     try {
-        // the only options execute consumes itself are include and quitOnFirstFail; all are optional
+        // the only options execute consumes itself are include and quitOnFirstFail; both are optional
         const [testTree, prepareError] = getTestTree(test, logger, options.include);
         if (prepareError) {
             logger.log('smoke:bad-test-spec', test.id, ['test not run because of errors in test specification']);
