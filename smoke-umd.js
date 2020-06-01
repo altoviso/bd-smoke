@@ -2,7 +2,7 @@
     typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
     typeof define === 'function' && define.amd ? define(factory) :
     (global = global || self, global.smoke = factory());
-}(this, function () { 'use strict';
+}(this, (function () { 'use strict';
 
     const isBrowser = typeof window !== 'undefined';
     const isNode = !isBrowser;
@@ -160,6 +160,7 @@
         }
 
         getName(context, node, testId) {
+            // eslint-disable-next-line no-shadow
             return context.map(node => node.id).join(this.options.nameSeparator) +
                 (node ? this.options.nameSeparator + node.id : '') +
                 (testId ? this.options.nameSeparator + testId : '');
@@ -914,22 +915,22 @@
         return options;
     }
 
+    // toArray also filters out falsey values
+    const toArray = src => (Array.isArray(src) ? src : [src]).filter(x => !!x);
+    const processInclude = (dest, value) => {
+        value.split(/[;,]/).forEach(item => {
+            item = item.split(/[./]/).map(x => x.trim()).filter(x => !!x);
+            item.length && dest.push(item);
+        });
+        return dest;
+    };
+    const commaListToArray = src => src.split(/[,;]/).map(s => s.trim()).filter(x => !!x);
+    const processCommaList = (dest, src) => {
+        return dest.concat(commaListToArray(src));
+    };
+
     function processOptions(options, dest) {
         // process everything except the profiles into dest; this allows modules loaded via profiles to use the options
-
-        // toArray also filters out falsey values
-        const toArray = src => (Array.isArray(src) ? src : [src]).filter(x => !!x);
-        const processInclude = (dest, value) => {
-            value.split(/[;,]/).forEach(item => {
-                item = item.split(/[./]/).map(x => x.trim()).filter(x => !!x);
-                item.length && dest.push(item);
-            });
-            return dest;
-        };
-        const commaListToArray = src => src.split(/[,;]/).map(s => s.trim()).filter(x => !!x);
-        const processCommaList = (dest, src) => {
-            return dest.concat(commaListToArray(src));
-        };
 
         Object.keys(options).forEach(name => {
             const value = options[name];
@@ -939,9 +940,9 @@
                     dest.include = toArray(value).reduce(processInclude, dest.include || []);
                     break;
                 case 'package':
-                    toArray(value).forEach(value => {
-                        commaListToArray(value).forEach(p => {
-                            const split = p.split(':').map(item => item.trim());
+                    toArray(value).forEach(item => {
+                        commaListToArray(item).forEach(p => {
+                            const split = p.split(':').map(s => s.trim());
                             require.config({ packages: [{ name: split[0], location: split[1], main: split[2] }] });
                         });
                     });
@@ -1006,6 +1007,7 @@
         let error = false;
         const context = [];
 
+        // eslint-disable-next-line no-shadow
         function logError(test, reason) {
             if (!reason) {
                 reason = test;
@@ -1046,7 +1048,9 @@
                 }
             }
             if (node.tests) {
+                // eslint-disable-next-line no-shadow
                 result.tests = node.tests.map((test, i) => {
+                    // eslint-disable-next-line no-shadow
                     let result;
                     if (typeof test === 'function') {
                         // implied testId of the index
@@ -1142,6 +1146,7 @@
 
     function failScaffold(context, node, phase, e, quitOnFirstFail, logger) {
         if (quitOnFirstFail) {
+            // eslint-disable-next-line no-shadow
             context.forEach(node => (node.abort = true));
         } else {
             for (let i = context.indexOf(node), end = context.length; i < end; i++) {
@@ -1199,6 +1204,7 @@
                         result.test = traverse(node.test, level + 1, result, checkIncluded && included !== EXACT);
                     }
                 } else {
+                    // eslint-disable-next-line no-shadow
                     result.tests = node.tests.map(test => {
                         // included can only be true or EXACT; if it's exact, then stop checking
                         // noinspection JSValidateTypes
@@ -1239,7 +1245,7 @@
             context.push(node);
             if (node.tests) {
                 let atLeastOneExecuted = false;
-                // eslint-disable-next-line no-restricted-syntax
+                // eslint-disable-next-line no-restricted-syntax,no-shadow
                 for (const test of node.tests) {
                     // force executing beforeEach (if any) for each test
                     node[BEFORE_EACH] = false;
@@ -1292,7 +1298,7 @@
         }
 
         try {
-            // the only options execute consumes itself are include and quitOnFirstFail; all are optional
+            // the only options execute consumes itself are include and quitOnFirstFail; both are optional
             const [testTree, prepareError] = getTestTree(test, logger, options.include);
             if (prepareError) {
                 logger.log('smoke:bad-test-spec', test.id, ['test not run because of errors in test specification']);
@@ -1312,6 +1318,7 @@
                         theExecutePromise.resolve();
                         return;
                     }
+                    // eslint-disable-next-line no-shadow
                     const [phase, context, node] = work.value;
                     if (phase === TEST) {
                         const testUid = callContext.testUid = logger.startTest(context);
@@ -1326,6 +1333,7 @@
                                 ).catch(
                                     e => {
                                         logger.failTest(testUid, e);
+                                        // eslint-disable-next-line no-shadow
                                         options.quitOnFirstFail && context.forEach(node => (node.abort = true));
                                         doWork();
                                     }
@@ -1338,6 +1346,7 @@
                         } catch (e) {
                             // synchronous error, continue to consume the work stream, which will terminate immediately
                             logger.failTest(testUid, e);
+                            // eslint-disable-next-line no-shadow
                             options.quitOnFirstFail && context.forEach(node => (node.abort = true));
                         }
                     } else {
@@ -1407,9 +1416,13 @@
 
         function filter(test) {
             if (remoteTests) {
-                return test.type === testTypes.both || test.type === testTypes.browser || test.type === testTypes.remote;
+                return test.type === testTypes.both ||
+                    test.type === testTypes.browser ||
+                    test.type === testTypes.remote;
             } else {
-                return test.type === testTypes.both || (isBrowser && test.type === testTypes.browser) || (isNode && test.type === testTypes.node);
+                return test.type === testTypes.both ||
+                    (isBrowser && test.type === testTypes.browser) ||
+                    (isNode && test.type === testTypes.node);
             }
         }
 
@@ -1433,7 +1446,7 @@
         // get all the capabilities
         if (caps && caps.length) {
             if (caps.some(cap => cap === '*')) {
-                Object.keys(capabilities).forEach(cap => (result[cap] = capabilities[cap]));
+                Object.keys(capabilities).forEach(cap => cap !== 'presets' && (result[cap] = capabilities[cap]));
             } else {
                 caps.forEach(cap => {
                     if (capabilities[cap]) {
@@ -1469,7 +1482,11 @@
             }
         }
 
-        if (!error && !Object.keys(result).length && capabilities.presets && capabilities.presets.default && Array.isArray(capabilities.presets.default)) {
+        if (!error &&
+            !Object.keys(result).length &&
+            capabilities.presets &&
+            capabilities.presets.default &&
+            Array.isArray(capabilities.presets.default)) {
             capabilities.presets.default.forEach(cap => {
                 if (capabilities[cap]) {
                     result[cap] = capabilities[cap];
@@ -1583,7 +1600,7 @@
             } else {
                 const testId = `${capabilityName}:${test.id}`;
                 logger.log('smoke:progress', 0, [`${testId}: started`]);
-                // eslint-disable-next-line no-await-in-loop
+                // eslint-disable-next-line no-await-in-loop,no-shadow
                 await driver.executeScript(exec, test.id, options.remoteOptions || 0).then(testId => {
                     return executeActions(driver).then(log => {
                         log.id = testId;
@@ -1608,22 +1625,12 @@
                 driver = _driver;
             })
             .then(() => {
-                let remoteUrl = options.remoteUrl;
-                if (/\?/.test(remoteUrl)) {
-                    // got a query string; make sure it has the remotelyControlled parameter
-                    if (!/(\?|\s+)remotelyControlled(\$|\s+)/.test(remoteUrl)) {
-                        remoteUrl += '&remotelyControlled';
-                    }
-                } else {
-                    // no query string; add one
-                    remoteUrl += '?remotelyControlled';
-                }
-                return driver.get(remoteUrl);
+                return driver.get(testList[0].remoteUrl || options.remoteUrl);
             })
             .then(() => {
                 return new Promise((resolve, reject) => {
                     // it is possible that smoke is not defined on the remote browser yet; give it a chance (2s) to load...
-                    let retryCount = 10;
+                    let retryCount = 50;
                     (function checkRemoteReady() {
                         driver.executeAsyncScript(waitForLoaderIdle)
                             .then(
@@ -1631,6 +1638,7 @@
                             )
                             .catch(() => {
                                 if (--retryCount) {
+                                    // eslint-disable-next-line no-shadow
                                     (new Promise(resolve => {
                                         setTimeout(resolve, 20);
                                     })).then(checkRemoteReady);
@@ -1664,6 +1672,7 @@
                 try {
                     logger.log('smoke:error', 0, ['remote crashed, capability aborted', e]);
                     return driver.quit().then(() => true);
+                    // eslint-disable-next-line no-shadow
                 } catch (e) {
                     logger.log('smoke:error', 0, ["webdriver crashed; it's likely the remote browser has not been shut down", e]);
                     return Promise.resolve(false);
@@ -1714,6 +1723,12 @@
             const provider = caps.provider;
             delete caps.provider;
             const builder = (new Builder()).withCapabilities(caps);
+
+            // this is necessary for, at least, firefox, since firefox complains about self-signed certs
+            if (/firefox/.test(capName)) {
+                builder.getCapabilities().setAcceptInsecureCerts(true);
+            }
+
             if (provider) {
                 builder.usingServer(options.provider.url || provider.url);
             }
@@ -1729,6 +1744,7 @@
         return remoteLogs;
     }
 
+    // eslint-disable-next-line no-shadow
     function run(tests, testInstruction, logger, options, remote, resetLog) {
         // run the test(s) given by testInstruction that are appropriate for the platform (node or browser) and
         // the location (remote or local). Log the output to logger, and control parts of the process by options
@@ -1741,6 +1757,7 @@
             logger.log('smoke:info', 0, ['run: no tests run', noTestsHint]);
             return Promise.resolve(false);
         }
+        // eslint-disable-next-line no-shadow
         const testUid = getTestUid();
         let theRunPromise;
         if (remote) {
@@ -1826,6 +1843,7 @@
                 return { ranRemote: true, localLog: logger, remoteLogs };
             });
         } else {
+            // eslint-disable-next-line no-shadow
             return run(tests, '*', logger, options, false, false).then(logger => {
                 log('Results:', logger);
                 print();
@@ -1905,7 +1923,7 @@
             return 'altoviso';
         },
         get version() {
-            return '1.6.0';
+            return '1.7.0';
         },
         isBrowser,
         isNode,
@@ -2170,4 +2188,4 @@
 
     return smoke$1;
 
-}));
+})));
