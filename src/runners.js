@@ -336,6 +336,12 @@ async function runRemote(testList, logger, options, capabilities) {
         const provider = caps.provider;
         delete caps.provider;
         const builder = (new Builder()).withCapabilities(caps);
+
+        // this is necessary for, at least, firefox, since firefox complains about self-signed certs
+        if (/firefox/.test(capName)) {
+            builder.getCapabilities().setAcceptInsecureCerts(true);
+        }
+
         if (provider) {
             builder.usingServer(options.provider.url || provider.url);
         }
