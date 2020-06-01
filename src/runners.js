@@ -35,9 +35,13 @@ function getTestList(testInstruction, tests, remoteTests) {
 
     function filter(test) {
         if (remoteTests) {
-            return test.type === testTypes.both || test.type === testTypes.browser || test.type === testTypes.remote;
+            return test.type === testTypes.both ||
+                test.type === testTypes.browser ||
+                test.type === testTypes.remote;
         } else {
-            return test.type === testTypes.both || (isBrowser && test.type === testTypes.browser) || (isNode && test.type === testTypes.node);
+            return test.type === testTypes.both ||
+                (isBrowser && test.type === testTypes.browser) ||
+                (isNode && test.type === testTypes.node);
         }
     }
 
@@ -61,7 +65,7 @@ function getCapabilities(capabilities, provider, caps, capPresets, logger) {
     // get all the capabilities
     if (caps && caps.length) {
         if (caps.some(cap => cap === '*')) {
-            Object.keys(capabilities).forEach(cap => (result[cap] = capabilities[cap]));
+            Object.keys(capabilities).forEach(cap => cap !== 'presets' && (result[cap] = capabilities[cap]));
         } else {
             caps.forEach(cap => {
                 if (capabilities[cap]) {
