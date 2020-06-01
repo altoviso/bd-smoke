@@ -101,7 +101,11 @@ function getCapabilities(capabilities, provider, caps, capPresets, logger) {
         }
     }
 
-    if (!error && !Object.keys(result).length && capabilities.presets && capabilities.presets.default && Array.isArray(capabilities.presets.default)) {
+    if (!error &&
+        !Object.keys(result).length &&
+        capabilities.presets &&
+        capabilities.presets.default &&
+        Array.isArray(capabilities.presets.default)) {
         capabilities.presets.default.forEach(cap => {
             if (capabilities[cap]) {
                 result[cap] = capabilities[cap];
@@ -215,7 +219,7 @@ async function executeTestList(testList, driver, capabilityName, logger, options
         } else {
             const testId = `${capabilityName}:${test.id}`;
             logger.log('smoke:progress', 0, [`${testId}: started`]);
-            // eslint-disable-next-line no-await-in-loop
+            // eslint-disable-next-line no-await-in-loop,no-shadow
             await driver.executeScript(exec, test.id, options.remoteOptions || 0).then(testId => {
                 return executeActions(driver).then(log => {
                     log.id = testId;
@@ -253,6 +257,7 @@ function doBrowser(builder, capabilityName, testList, logger, options, remoteLog
                         )
                         .catch(() => {
                             if (--retryCount) {
+                                // eslint-disable-next-line no-shadow
                                 (new Promise(resolve => {
                                     setTimeout(resolve, 20);
                                 })).then(checkRemoteReady);
@@ -286,6 +291,7 @@ function doBrowser(builder, capabilityName, testList, logger, options, remoteLog
             try {
                 logger.log('smoke:error', 0, ['remote crashed, capability aborted', e]);
                 return driver.quit().then(() => true);
+                // eslint-disable-next-line no-shadow
             } catch (e) {
                 logger.log('smoke:error', 0, ["webdriver crashed; it's likely the remote browser has not been shut down", e]);
                 return Promise.resolve(false);
@@ -357,6 +363,7 @@ async function runRemote(testList, logger, options, capabilities) {
     return remoteLogs;
 }
 
+// eslint-disable-next-line no-shadow
 function run(tests, testInstruction, logger, options, remote, resetLog) {
     // run the test(s) given by testInstruction that are appropriate for the platform (node or browser) and
     // the location (remote or local). Log the output to logger, and control parts of the process by options
@@ -369,6 +376,7 @@ function run(tests, testInstruction, logger, options, remote, resetLog) {
         logger.log('smoke:info', 0, ['run: no tests run', noTestsHint]);
         return Promise.resolve(false);
     }
+    // eslint-disable-next-line no-shadow
     const testUid = getTestUid();
     let theRunPromise;
     if (remote) {
@@ -454,6 +462,7 @@ function runDefault(tests, options, logger) {
             return { ranRemote: true, localLog: logger, remoteLogs };
         });
     } else {
+        // eslint-disable-next-line no-shadow
         return run(tests, '*', logger, options, false, false).then(logger => {
             log('Results:', logger);
             print();

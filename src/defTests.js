@@ -8,6 +8,7 @@ function checkTest(test, logger) {
     let error = false;
     const context = [];
 
+    // eslint-disable-next-line no-shadow
     function logError(test, reason) {
         if (!reason) {
             reason = test;
@@ -48,7 +49,9 @@ function checkTest(test, logger) {
             }
         }
         if (node.tests) {
+            // eslint-disable-next-line no-shadow
             result.tests = node.tests.map((test, i) => {
+                // eslint-disable-next-line no-shadow
                 let result;
                 if (typeof test === 'function') {
                     // implied testId of the index

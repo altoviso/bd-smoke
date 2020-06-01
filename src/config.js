@@ -64,22 +64,22 @@ function argsToOptions(args, _normalizeOptionName) {
     return options;
 }
 
+// toArray also filters out falsey values
+const toArray = src => (Array.isArray(src) ? src : [src]).filter(x => !!x);
+const processInclude = (dest, value) => {
+    value.split(/[;,]/).forEach(item => {
+        item = item.split(/[./]/).map(x => x.trim()).filter(x => !!x);
+        item.length && dest.push(item);
+    });
+    return dest;
+};
+const commaListToArray = src => src.split(/[,;]/).map(s => s.trim()).filter(x => !!x);
+const processCommaList = (dest, src) => {
+    return dest.concat(commaListToArray(src));
+};
+
 function processOptions(options, dest) {
     // process everything except the profiles into dest; this allows modules loaded via profiles to use the options
-
-    // toArray also filters out falsey values
-    const toArray = src => (Array.isArray(src) ? src : [src]).filter(x => !!x);
-    const processInclude = (dest, value) => {
-        value.split(/[;,]/).forEach(item => {
-            item = item.split(/[./]/).map(x => x.trim()).filter(x => !!x);
-            item.length && dest.push(item);
-        });
-        return dest;
-    };
-    const commaListToArray = src => src.split(/[,;]/).map(s => s.trim()).filter(x => !!x);
-    const processCommaList = (dest, src) => {
-        return dest.concat(commaListToArray(src));
-    };
 
     Object.keys(options).forEach(name => {
         const value = options[name];
@@ -89,9 +89,9 @@ function processOptions(options, dest) {
                 dest.include = toArray(value).reduce(processInclude, dest.include || []);
                 break;
             case 'package':
-                toArray(value).forEach(value => {
-                    commaListToArray(value).forEach(p => {
-                        const split = p.split(':').map(item => item.trim());
+                toArray(value).forEach(item => {
+                    commaListToArray(item).forEach(p => {
+                        const split = p.split(':').map(s => s.trim());
                         require.config({ packages: [{ name: split[0], location: split[1], main: split[2] }] });
                     });
                 });

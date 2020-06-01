@@ -87,6 +87,7 @@ const Logger = class {
     }
 
     getName(context, node, testId) {
+        // eslint-disable-next-line no-shadow
         return context.map(node => node.id).join(this.options.nameSeparator) +
             (node ? this.options.nameSeparator + node.id : '') +
             (testId ? this.options.nameSeparator + testId : '');

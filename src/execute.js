@@ -27,6 +27,7 @@ const
 
 function failScaffold(context, node, phase, e, quitOnFirstFail, logger) {
     if (quitOnFirstFail) {
+        // eslint-disable-next-line no-shadow
         context.forEach(node => (node.abort = true));
     } else {
         for (let i = context.indexOf(node), end = context.length; i < end; i++) {
@@ -84,6 +85,7 @@ function getTestTree(test, logger, include) {
                     result.test = traverse(node.test, level + 1, result, checkIncluded && included !== EXACT);
                 }
             } else {
+                // eslint-disable-next-line no-shadow
                 result.tests = node.tests.map(test => {
                     // included can only be true or EXACT; if it's exact, then stop checking
                     // noinspection JSValidateTypes
@@ -124,7 +126,7 @@ function execute(test, logger, options, driver) {
         context.push(node);
         if (node.tests) {
             let atLeastOneExecuted = false;
-            // eslint-disable-next-line no-restricted-syntax
+            // eslint-disable-next-line no-restricted-syntax,no-shadow
             for (const test of node.tests) {
                 // force executing beforeEach (if any) for each test
                 node[BEFORE_EACH] = false;
@@ -197,6 +199,7 @@ function execute(test, logger, options, driver) {
                     theExecutePromise.resolve();
                     return;
                 }
+                // eslint-disable-next-line no-shadow
                 const [phase, context, node] = work.value;
                 if (phase === TEST) {
                     const testUid = callContext.testUid = logger.startTest(context);
@@ -211,6 +214,7 @@ function execute(test, logger, options, driver) {
                             ).catch(
                                 e => {
                                     logger.failTest(testUid, e);
+                                    // eslint-disable-next-line no-shadow
                                     options.quitOnFirstFail && context.forEach(node => (node.abort = true));
                                     doWork();
                                 }
@@ -223,6 +227,7 @@ function execute(test, logger, options, driver) {
                     } catch (e) {
                         // synchronous error, continue to consume the work stream, which will terminate immediately
                         logger.failTest(testUid, e);
+                        // eslint-disable-next-line no-shadow
                         options.quitOnFirstFail && context.forEach(node => (node.abort = true));
                     }
                 } else {
